@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interactive Reel Stacks</title>
+    <title>Reel Vocab - Interactive Stack</title>
     <style>
         :root {
             --word-bg: #121212;
@@ -16,25 +16,48 @@
         body {
             background: #000;
             color: white;
-            font-family: -apple-system, sans-serif;
+            font-family: -apple-system, system-ui, sans-serif;
             height: 100vh;
             overflow: hidden;
             touch-action: none;
+        }
+
+        /* Circular Progress Container */
+        #progress-wrapper {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            border-radius: 50%;
+            padding: 4px;
+            backdrop-filter: blur(8px);
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            stroke: var(--accent);
         }
 
         #viewport {
             width: 100%;
             height: 100%;
             position: relative;
-            overflow: hidden;
         }
 
+        /* The Card Unit */
         .card-stack {
             position: absolute;
             width: 100%;
             height: 100%;
             will-change: transform;
-            display: flex;
+            display: flex; /* Side-by-side pages */
             transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
         }
 
@@ -53,12 +76,12 @@
         .word-page { background: var(--word-bg); }
         .meaning-page { background: var(--meaning-bg); }
 
-        .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 15px; }
-        .text { font-size: 3.5rem; font-weight: 900; }
+        .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 10px; }
+        .text { font-size: 3.2rem; font-weight: 900; line-height: 1.1; }
 
         .hint {
             position: absolute;
-            bottom: 20px;
+            bottom: 25px;
             width: 100%;
             text-align: center;
             font-size: 0.7rem;
@@ -70,8 +93,15 @@
 </head>
 <body>
 
+    <div id="progress-wrapper">
+        <svg width="44" height="44">
+            <circle stroke="rgba(255,255,255,0.1)" stroke-width="3" fill="transparent" r="18" cx="22" cy="22"/>
+            <circle id="progress-circle" class="progress-ring__circle" stroke-width="3" fill="transparent" r="18" cx="22" cy="22"/>
+        </svg>
+    </div>
+
     <div id="viewport"></div>
-    <div class="hint">Tap to Flip • Drag vertically to browse</div>
+    <div class="hint">Swipe Left/Right for Bangla • Swipe Up/Down for Next</div>
 
     <script>
         const vocab = [
@@ -79,109 +109,155 @@
             { en: "Euphoria", bn: "উচ্ছ্বাস" },
             { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
             { en: "Nuance", bn: "সামান্য পার্থক্য" },
-            { en: "Vibrant", bn: "প্রাণবন্ত" }
+            { en: "Vibrant", bn: "প্রাণবন্ত" },
+            { en: "Tenacious", bn: "নাছোড়বান্দা" }
         ];
 
         const viewport = document.getElementById('viewport');
+        const circle = document.getElementById('progress-circle');
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+
+        circle.style.strokeDasharray = `${circumference} ${circumference}`;
+        circle.style.strokeDashoffset = circumference;
+
         const cards = [];
         let currentIdx = 0;
-        let startY = 0;
+        let startX = 0, startY = 0;
+        let deltaX = 0, deltaY = 0;
         let isDragging = false;
-        let deltaY = 0;
+        let dragAxis = null; // 'v' for vertical, 'h' for horizontal
 
-        // 1. Initialize Stack
+        function setProgress() {
+            const percent = ((currentIdx + 1) / vocab.length) * 100;
+            circle.style.strokeDashoffset = circumference - (percent / 100 * circumference);
+        }
+
+        // 1. Setup Cards
         vocab.forEach((item, i) => {
             const el = document.createElement('div');
             el.className = 'card-stack';
-            el.style.zIndex = vocab.length - i; // Higher index for earlier cards
+            el.style.zIndex = vocab.length - i;
+            el.dataset.horizontalPos = 0; // 0 is English, -100 is Bangla
             el.innerHTML = `
                 <div class="page word-page">
-                    <div class="label">English</div>
+                    <div class="label">English Word</div>
                     <div class="text">${item.en}</div>
                 </div>
                 <div class="page meaning-page">
-                    <div class="label">Bangla</div>
+                    <div class="label" style="color:var(--accent)">Bangla Meaning</div>
                     <div class="text" style="color:var(--accent)">${item.bn}</div>
                 </div>
             `;
-
-            // Tap to flip
-            el.addEventListener('click', () => {
-                const isFlipped = el.dataset.flipped === 'true';
-                el.style.transform = isFlipped ? 'translateX(0%)' : 'translateX(-100%)';
-                el.dataset.flipped = !isFlipped;
-            });
-
             viewport.appendChild(el);
             cards.push(el);
         });
 
-        // 2. Dragging Logic
-        function handleStart(y) {
+        // 2. Interaction Logic
+        function handleStart(x, y) {
             isDragging = true;
+            startX = x;
             startY = y;
+            dragAxis = null;
             cards.forEach(c => c.style.transition = 'none');
         }
 
-        function handleMove(y) {
+        function handleMove(x, y) {
             if (!isDragging) return;
+            deltaX = x - startX;
             deltaY = y - startY;
 
-            // Swipe Up (Moving Current Card Away)
-            if (deltaY < 0 && currentIdx < cards.length - 1) {
-                cards[currentIdx].style.transform = `translateY(${deltaY}px)`;
+            // Determine Axis if not set
+            if (!dragAxis) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) dragAxis = 'h';
+                else if (Math.abs(deltaY) > 5) dragAxis = 'v';
+            }
+
+            if (dragAxis === 'h') {
+                // Horizontal Swipe (Left/Right)
+                const currentHPos = parseInt(cards[currentIdx].dataset.horizontalPos);
+                let moveX = currentHPos + (deltaX / window.innerWidth * 100);
+                // Constraints
+                moveX = Math.min(0, Math.max(-100, moveX));
+                cards[currentIdx].style.transform = `translateX(${moveX}%)`;
             } 
-            // Swipe Down (Pulling Previous Card back in)
-            else if (deltaY > 0 && currentIdx > 0) {
-                const prevCard = cards[currentIdx - 1];
-                prevCard.style.transform = `translateY(${Math.min(-window.innerHeight + deltaY, 0)}px)`;
+            else if (dragAxis === 'v') {
+                // Vertical Swipe (Up/Down)
+                const hOffset = cards[currentIdx].dataset.horizontalPos;
+                if (deltaY < 0 && currentIdx < cards.length - 1) {
+                    cards[currentIdx].style.transform = `translateX(${hOffset}%) translateY(${deltaY}px)`;
+                } else if (deltaY > 0 && currentIdx > 0) {
+                    const prevCard = cards[currentIdx - 1];
+                    const prevH = prevCard.dataset.horizontalPos;
+                    prevCard.style.transform = `translateX(${prevH}%) translateY(${-window.innerHeight + deltaY}px)`;
+                }
             }
         }
 
         function handleEnd() {
             if (!isDragging) return;
             isDragging = false;
-            const threshold = window.innerHeight * 0.2;
+            const card = cards[currentIdx];
+            const vThreshold = window.innerHeight * 0.15;
+            const hThreshold = 50;
 
             cards.forEach(c => c.style.transition = 'transform 0.5s cubic-bezier(0.2, 1, 0.3, 1)');
 
-            if (deltaY < -threshold && currentIdx < cards.length - 1) {
-                // Confirm Next
-                cards[currentIdx].style.transform = `translateY(-100%)`;
-                currentIdx++;
-            } else if (deltaY > threshold && currentIdx > 0) {
-                // Confirm Previous
-                currentIdx--;
-                cards[currentIdx].style.transform = `translateY(0%)`;
-            } else {
-                // Snap Back
-                cards[currentIdx].style.transform = cards[currentIdx].dataset.flipped === 'true' ? 'translateX(-100%)' : 'translateX(0%)';
-                if (currentIdx > 0) cards[currentIdx - 1].style.transform = `translateY(-100%)`;
+            if (dragAxis === 'h') {
+                // Horizontal Snapping
+                if (deltaX < -hThreshold) {
+                    card.style.transform = 'translateX(-100%)';
+                    card.dataset.horizontalPos = -100;
+                } else if (deltaX > hThreshold) {
+                    card.style.transform = 'translateX(0%)';
+                    card.dataset.horizontalPos = 0;
+                } else {
+                    card.style.transform = `translateX(${card.dataset.horizontalPos}%)`;
+                }
+            } 
+            else if (dragAxis === 'v') {
+                // Vertical Snapping
+                if (deltaY < -vThreshold && currentIdx < cards.length - 1) {
+                    card.style.transform = `translateX(${card.dataset.horizontalPos}%) translateY(-100%)`;
+                    currentIdx++;
+                } else if (deltaY > vThreshold && currentIdx > 0) {
+                    currentIdx--;
+                    cards[currentIdx].style.transform = `translateX(${cards[currentIdx].dataset.horizontalPos}%) translateY(0%)`;
+                } else {
+                    // Bounce back
+                    card.style.transform = `translateX(${card.dataset.horizontalPos}%) translateY(0%)`;
+                    if (currentIdx > 0) {
+                        const prev = cards[currentIdx-1];
+                        prev.style.transform = `translateX(${prev.dataset.horizontalPos}%) translateY(-100%)`;
+                    }
+                }
+                setProgress();
             }
-            deltaY = 0;
+            deltaX = 0; deltaY = 0;
         }
 
-        // Event Listeners (Mouse + Touch)
-        window.addEventListener('mousedown', e => handleStart(e.clientY));
-        window.addEventListener('mousemove', e => handleMove(e.clientY));
-        window.addEventListener('mouseup', handleEnd);
-
-        window.addEventListener('touchstart', e => handleStart(e.touches[0].clientY));
-        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientY));
-        window.addEventListener('touchend', handleEnd);
-
-        // Wheel Support
+        // Support for Mouse Wheel (Vertical only for speed)
         window.addEventListener('wheel', e => {
             if (isDragging) return;
             if (e.deltaY > 50 && currentIdx < cards.length - 1) {
-                cards[currentIdx].style.transform = `translateY(-100%)`;
+                cards[currentIdx].style.transform = `translateX(${cards[currentIdx].dataset.horizontalPos}%) translateY(-100%)`;
                 currentIdx++;
             } else if (e.deltaY < -50 && currentIdx > 0) {
                 currentIdx--;
-                cards[currentIdx].style.transform = `translateY(0%)`;
+                cards[currentIdx].style.transform = `translateX(${cards[currentIdx].dataset.horizontalPos}%) translateY(0%)`;
             }
+            setProgress();
         });
 
+        // Event Bindings
+        window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchend', handleEnd);
+
+        setProgress();
     </script>
 </body>
 </html>
