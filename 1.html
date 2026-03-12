@@ -3,10 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
-<meta name="viewport"
-content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Vocabulary Reels V2</title>
 
 <style>
@@ -27,24 +24,29 @@ overflow:hidden;
 touch-action:none;
 }
 
+/* Dynamic viewport height fixes Android browser UI shrinking */
+
 #app{
-height:100vh;
+height:100dvh;
 width:100vw;
 position:relative;
 overflow:hidden;
 }
 
-/* CARD */
+/* FULLSCREEN CARD */
 
 .card{
 position:absolute;
-width:100%;
-height:100%;
+top:0;
+left:0;
+width:100vw;
+height:100dvh;
 display:flex;
 justify-content:center;
 align-items:center;
 transition:transform .45s cubic-bezier(.22,.61,.36,1);
 will-change:transform;
+padding:clamp(20px,5vw,60px);
 }
 
 .card-inner{
@@ -56,6 +58,7 @@ transition:transform .35s cubic-bezier(.22,.61,.36,1);
 
 .side{
 width:100%;
+height:100%;
 display:flex;
 flex-direction:column;
 justify-content:center;
@@ -65,12 +68,13 @@ text-align:center;
 }
 
 .word{
-font-size:clamp(42px,9vw,78px);
+font-size:clamp(42px,11vw,88px);
 font-weight:700;
+line-height:1.1;
 }
 
 .meaning{
-font-size:clamp(26px,6vw,42px);
+font-size:clamp(26px,7vw,46px);
 opacity:.9;
 }
 
@@ -78,7 +82,7 @@ opacity:.9;
 
 .progress{
 position:absolute;
-top:20px;
+top:max(20px, env(safe-area-inset-top));
 left:50%;
 transform:translateX(-50%);
 width:70px;
@@ -129,8 +133,6 @@ stroke-dashoffset:200;
 transition:.3s;
 }
 
-/* CONFETTI */
-
 canvas{
 position:fixed;
 top:0;
@@ -156,8 +158,6 @@ pointer-events:none;
 <canvas id="confetti"></canvas>
 
 <script>
-
-/* VOCAB DATA */
 
 const words=[
 {en:"Admonish",bn:"ধমক দেওয়া"},
@@ -215,8 +215,6 @@ function cards(){
 return [...document.querySelectorAll(".card")]
 }
 
-/* PROGRESS */
-
 function updateProgress(){
 
 counter.textContent=index+1
@@ -236,8 +234,6 @@ launchConfetti()
 
 updateProgress()
 
-/* RESET */
-
 function resetHorizontal(){
 
 cards().forEach(c=>{
@@ -245,8 +241,6 @@ c.querySelector(".card-inner").style.transform="translateX(0)"
 })
 
 }
-
-/* NAVIGATION */
 
 function next(){
 
@@ -277,8 +271,6 @@ resetHorizontal()
 cards()[index].style.transform="translateY(0)"
 
 }
-
-/* TOUCH */
 
 app.addEventListener("touchstart",e=>{
 
@@ -345,8 +337,6 @@ else cards()[index].style.transform="translateY(0)"
 
 })
 
-/* TAP REVEAL */
-
 app.addEventListener("click",()=>{
 
 let inner=cards()[index].querySelector(".card-inner")
@@ -358,16 +348,12 @@ inner.style.transform="translateX(-50%)"
 
 })
 
-/* DESKTOP SCROLL */
-
 app.addEventListener("wheel",e=>{
 
 if(e.deltaY>0) next()
 else prev()
 
 })
-
-/* CONFETTI */
 
 const canvas=document.getElementById("confetti")
 const ctx=canvas.getContext("2d")
