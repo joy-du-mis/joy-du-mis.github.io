@@ -249,6 +249,16 @@
         window.addEventListener('touchend', handleEnd);
 
         updateProgressUI();
+
+
+        // This section in the code handles the logic you asked for:
+if (deltaY < -threshold && currentIdx < cards.length - 1) {
+    // Swipe Up -> Next
+    currentIdx++;
+} else if (deltaY > threshold && currentIdx > 0) {
+    // Swipe Down -> Previous
+    currentIdx--;
+}
     </script>
 </body>
 </html>
