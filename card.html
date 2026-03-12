@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocab Reels - Advanced Progress</title>
+    <title>Vocab Reels - Infinite Reveal</title>
     <style>
         :root {
             --word-bg: #121212;
@@ -24,7 +24,7 @@
             touch-action: none;
         }
 
-        /* Progress Container */
+        /* Progress UI */
         #progress-panel {
             position: absolute;
             top: 20px;
@@ -38,7 +38,6 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
             transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            overflow: hidden;
             width: 60px;
             height: 60px;
             border-radius: 50%;
@@ -52,31 +51,12 @@
             color: #000;
         }
 
-        #counter-text {
-            position: absolute;
-            font-size: 1.2rem;
-            font-weight: bold;
-            transition: opacity 0.3s;
-        }
-
-        #completion-msg {
-            position: absolute;
-            font-size: 0.9rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0;
-            white-space: nowrap;
-        }
-
+        #counter-text { position: absolute; font-size: 1.2rem; font-weight: bold; transition: opacity 0.3s; }
+        #completion-msg { position: absolute; font-size: 0.9rem; font-weight: 800; text-transform: uppercase; opacity: 0; white-space: nowrap; }
         #progress-panel.completed #counter-text { opacity: 0; }
         #progress-panel.completed #completion-msg { opacity: 1; }
 
-        .progress-ring {
-            position: absolute;
-            transition: opacity 0.4s;
-        }
-
+        .progress-ring { position: absolute; transition: opacity 0.4s; }
         .progress-ring__circle {
             transition: stroke-dashoffset 0.35s;
             transform: rotate(-90deg);
@@ -111,32 +91,20 @@
 
         .word-page { background: var(--word-bg); }
         .meaning-page { background: var(--meaning-bg); }
-        .finish-page { 
-            background: var(--finish-bg); 
-            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
-        }
+        .finish-page { background: radial-gradient(circle, #1a1a1a 0%, #000 100%); }
         
         .text { font-size: 3rem; font-weight: 900; }
         .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 10px; }
         
-        .congrats-icon { font-size: 5rem; margin-bottom: 20px; display: block; }
-
-        /* Confetti Styles */
+        /* Confetti */
         .confetti {
             position: absolute;
-            width: 10px;
-            height: 10px;
-            top: -10px;
-            z-index: 1002;
+            width: 8px; height: 8px;
+            top: -10px; z-index: 1002;
             pointer-events: none;
             animation: fall linear forwards;
         }
-
-        @keyframes fall {
-            to {
-                transform: translateY(100vh) rotate(720deg);
-            }
-        }
+        @keyframes fall { to { transform: translateY(105vh) rotate(720deg); } }
     </style>
 </head>
 <body>
@@ -166,8 +134,7 @@
         const panel = document.getElementById('progress-panel');
         const counter = document.getElementById('counter-text');
         
-        const radius = circle.r.baseVal.value;
-        const circumference = radius * 2 * Math.PI;
+        const circumference = 26 * 2 * Math.PI;
         circle.style.strokeDasharray = `${circumference} ${circumference}`;
 
         let currentIdx = 0;
@@ -175,27 +142,23 @@
         const cards = [];
 
         function triggerConfetti() {
-            for (let i = 0; i < 50; i++) {
+            for (let i = 0; i < 60; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
                 confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                confetti.style.opacity = Math.random();
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 60%)`;
+                confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
                 document.body.appendChild(confetti);
-                setTimeout(() => confetti.remove(), 4000);
+                setTimeout(() => confetti.remove(), 3000);
             }
         }
 
         function updateProgressUI() {
-            // Adjust currentNumber logic: Cap it at vocab length for the UI
             const displayNum = Math.min(currentIdx + 1, vocab.length);
             counter.textContent = displayNum;
-
             const percent = (displayNum / vocab.length) * 100;
             circle.style.strokeDashoffset = circumference - (percent / 100 * circumference);
 
-            // Trigger Completion state when on the final "Congratulations" card
             if (currentIdx === vocab.length) {
                 panel.classList.add('completed');
                 triggerConfetti();
@@ -204,12 +167,12 @@
             }
         }
 
-        // Initialize Cards
+        // Create Vocab Cards
         vocab.forEach((item, i) => {
             const el = document.createElement('div');
             el.className = 'card-stack';
             el.style.zIndex = (vocab.length + 1) - i;
-            el.dataset.hPos = 0;
+            el.dataset.hPos = 0; // 0 = English, -100 = Bangla
             el.innerHTML = `
                 <div class="page word-page"><div class="label">English</div><div class="text">${item.en}</div></div>
                 <div class="page meaning-page"><div class="label" style="color:var(--accent)">Bangla</div><div class="text" style="color:var(--accent)">${item.bn}</div></div>
@@ -218,23 +181,21 @@
             cards.push(el);
         });
 
-        // Add Final Congratulations Card
+        // Final Card
         const finishCard = document.createElement('div');
         finishCard.className = 'card-stack';
         finishCard.style.zIndex = 0;
         finishCard.dataset.hPos = 0;
         finishCard.innerHTML = `
             <div class="page finish-page">
-                <span class="congrats-icon">🎉</span>
+                <div style="font-size: 5rem; margin-bottom: 20px;">🎉</div>
                 <div class="label" style="color:var(--accent)">Session Complete</div>
-                <div class="text">Great Job!</div>
-                <p style="margin-top:20px; opacity:0.6">You've mastered ${vocab.length} words.</p>
+                <div class="text">Perfect!</div>
+                <p style="margin-top:20px; opacity:0.6">You've mastered today's list.</p>
             </div>
         `;
         viewport.appendChild(finishCard);
         cards.push(finishCard);
-
-        // --- Gesture Logic (Same as your original) ---
 
         function handleStart(x, y) {
             isDragging = true; startX = x; startY = y; dragAxis = null;
@@ -246,18 +207,18 @@
             deltaX = x - startX; deltaY = y - startY;
 
             if (!dragAxis) {
-                if (Math.abs(deltaX) > Math.abs(deltaY)) dragAxis = 'h';
-                else if (Math.abs(deltaY) > 5) dragAxis = 'v';
+                if (Math.abs(deltaX) > 10) dragAxis = 'h';
+                else if (Math.abs(deltaY) > 10) dragAxis = 'v';
             }
 
-            if (dragAxis === 'h') {
+            if (dragAxis === 'h' && currentIdx < vocab.length) {
                 const currentH = parseInt(cards[currentIdx].dataset.hPos);
                 let moveX = currentH + (deltaX / window.innerWidth * 100);
-                moveX = Math.min(0, Math.max(-100, moveX));
+                // Allow "infinite" swiping feel by not clamping too hard during drag
                 cards[currentIdx].style.transform = `translateX(${moveX}%)`;
             } else if (dragAxis === 'v') {
                 const h = cards[currentIdx].dataset.hPos;
-                if (deltaY < 0 && currentIdx < cards.length) { // Adjusted for extra card
+                if (deltaY < 0 && currentIdx < cards.length - 1) {
                     cards[currentIdx].style.transform = `translateX(${h}%) translateY(${deltaY}px)`;
                 } else if (deltaY > 0 && currentIdx > 0) {
                     const prev = cards[currentIdx-1];
@@ -270,12 +231,18 @@
             if (!isDragging) return;
             isDragging = false;
             const card = cards[currentIdx];
-            cards.forEach(c => c.style.transition = 'all 0.5s cubic-bezier(0.2, 1, 0.3, 1)');
+            cards.forEach(c => c.style.transition = 'all 0.4s cubic-bezier(0.25, 1, 0.5, 1)');
 
-            if (dragAxis === 'h') {
-                if (deltaX < -50) { card.style.transform = 'translateX(-100%)'; card.dataset.hPos = -100; }
-                else if (deltaX > 50) { card.style.transform = 'translateX(0%)'; card.dataset.hPos = 0; }
-                else card.style.transform = `translateX(${card.dataset.hPos}%)`;
+            if (dragAxis === 'h' && currentIdx < vocab.length) {
+                const currentH = parseInt(card.dataset.hPos);
+                // If swiped more than 20% of screen width, toggle side
+                if (Math.abs(deltaX) > window.innerWidth * 0.2) {
+                    const newPos = (currentH === 0) ? -100 : 0;
+                    card.style.transform = `translateX(${newPos}%)`;
+                    card.dataset.hPos = newPos;
+                } else {
+                    card.style.transform = `translateX(${currentH}%)`;
+                }
             } else if (dragAxis === 'v') {
                 if (deltaY < -100 && currentIdx < cards.length - 1) {
                     card.style.transform = `translateX(${card.dataset.hPos}%) translateY(-100%)`;
@@ -292,6 +259,7 @@
             deltaX = 0; deltaY = 0;
         }
 
+        // Listeners
         window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
         window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
         window.addEventListener('mouseup', handleEnd);
