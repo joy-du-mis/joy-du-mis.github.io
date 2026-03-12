@@ -1,1 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocab Reels - Advanced Progress</title>
+    <style>
+        :root {
+            --word-bg: #121212;
+            --meaning-bg: #1a237e;
+            --accent: #00f2ea;
+            --panel-bg: rgba(255, 255, 255, 0.1);
+            --finish-bg: #000;
+        }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: #000;
+            color: white;
+            font-family: -apple-system, system-ui, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Progress Container */
+        #progress-panel {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+        }
+
+        #progress-panel.completed {
+            width: 140px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #000;
+        }
+
+        #counter-text {
+            position: absolute;
+            font-size: 1.2rem;
+            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+
+        #completion-msg {
+            position: absolute;
+            font-size: 0.9rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0;
+            white-space: nowrap;
+        }
+
+        #progress-panel.completed #counter-text { opacity: 0; }
+        #progress-panel.completed #completion-msg { opacity: 1; }
+
+        .progress-ring {
+            position: absolute;
+            transition: opacity 0.4s;
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            stroke: var(--accent);
+        }
+
+        #progress-panel.completed .progress-ring { opacity: 0; }
+
+        /* Card Setup */
+        #viewport { width: 100%; height: 100%; position: relative; }
+
+        .card-stack {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            will-change: transform;
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        .page {
+            min-width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .word-page { background: var(--word-bg); }
+        .meaning-page { background: var(--meaning-bg); }
+        .finish-page { 
+            background: var(--finish-bg); 
+            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+        }
+        
+        .text { font-size: 3rem; font-weight: 900; }
+        .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 10px; }
+        
+        .congrats-icon { font-size: 5rem; margin-bottom: 20px; display: block; }
+
+        /* Confetti Styles */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            z-index: 1002;
+            pointer-events: none;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="progress-panel">
+        <svg class="progress-ring" width="60" height="60">
+            <circle stroke="rgba(255,255,255,0.1)" stroke-width="4" fill="transparent" r="26" cx="30" cy="30"/>
+            <circle id="progress-circle" class="progress-ring__circle" stroke-width="4" fill="transparent" r="26" cx="30" cy="30"/>
+        </svg>
+        <div id="counter-text">1</div>
+        <div id="completion-msg">Finished!</div>
+    </div>
+
+    <div id="viewport"></div>
+
+    <script>
+        const vocab = [
+            { en: "Infallible", bn: "নির্ভুল" },
+            { en: "Euphoria", bn: "উচ্ছ্বাস" },
+            { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
+            { en: "Nuance", bn: "সামান্য পার্থক্য" },
+            { en: "Vibrant", bn: "প্রাণবন্ত" }
+        ];
+
+        const viewport = document.getElementById('viewport');
+        const circle = document.getElementById('progress-circle');
+        const panel = document.getElementById('progress-panel');
+        const counter = document.getElementById('counter-text');
+        
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        circle.style.strokeDasharray = `${circumference} ${circumference}`;
+
+        let currentIdx = 0;
+        let startX = 0, startY = 0, deltaX = 0, deltaY = 0, isDragging = false, dragAxis = null;
+        const cards = [];
+
+        function triggerConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                confetti.style.opacity = Math.random();
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+
+        function updateProgressUI() {
+            // Adjust currentNumber logic: Cap it at vocab length for the UI
+            const displayNum = Math.min(currentIdx + 1, vocab.length);
+            counter.textContent = displayNum;
+
+            const percent = (displayNum / vocab.length) * 100;
+            circle.style.strokeDashoffset = circumference - (percent / 100 * circumference);
+
+            // Trigger Completion state when on the final "Congratulations" card
+            if (currentIdx === vocab.length) {
+                panel.classList.add('completed');
+                triggerConfetti();
+            } else {
+                panel.classList.remove('completed');
+            }
+        }
+
+        // Initialize Cards
+        vocab.forEach((item, i) => {
+            const el = document.createElement('div');
+            el.className = 'card-stack';
+            el.style.zIndex = (vocab.length + 1) - i;
+            el.dataset.hPos = 0;
+            el.innerHTML = `
+                <div class="page word-page"><div class="label">English</div><div class="text">${item.en}</div></div>
+                <div class="page meaning-page"><div class="label" style="color:var(--accent)">Bangla</div><div class="text" style="color:var(--accent)">${item.bn}</div></div>
+            `;
+            viewport.appendChild(el);
+            cards.push(el);
+        });
+
+        // Add Final Congratulations Card
+        const finishCard = document.createElement('div');
+        finishCard.className = 'card-stack';
+        finishCard.style.zIndex = 0;
+        finishCard.dataset.hPos = 0;
+        finishCard.innerHTML = `
+            <div class="page finish-page">
+                <span class="congrats-icon">🎉</span>
+                <div class="label" style="color:var(--accent)">Session Complete</div>
+                <div class="text">Great Job!</div>
+                <p style="margin-top:20px; opacity:0.6">You've mastered ${vocab.length} words.</p>
+            </div>
+        `;
+        viewport.appendChild(finishCard);
+        cards.push(finishCard);
+
+        // --- Gesture Logic (Same as your original) ---
+
+        function handleStart(x, y) {
+            isDragging = true; startX = x; startY = y; dragAxis = null;
+            cards.forEach(c => c.style.transition = 'none');
+        }
+
+        function handleMove(x, y) {
+            if (!isDragging) return;
+            deltaX = x - startX; deltaY = y - startY;
+
+            if (!dragAxis) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) dragAxis = 'h';
+                else if (Math.abs(deltaY) > 5) dragAxis = 'v';
+            }
+
+            if (dragAxis === 'h') {
+                const currentH = parseInt(cards[currentIdx].dataset.hPos);
+                let moveX = currentH + (deltaX / window.innerWidth * 100);
+                moveX = Math.min(0, Math.max(-100, moveX));
+                cards[currentIdx].style.transform = `translateX(${moveX}%)`;
+            } else if (dragAxis === 'v') {
+                const h = cards[currentIdx].dataset.hPos;
+                if (deltaY < 0 && currentIdx < cards.length) { // Adjusted for extra card
+                    cards[currentIdx].style.transform = `translateX(${h}%) translateY(${deltaY}px)`;
+                } else if (deltaY > 0 && currentIdx > 0) {
+                    const prev = cards[currentIdx-1];
+                    prev.style.transform = `translateX(${prev.dataset.hPos}%) translateY(${-window.innerHeight + deltaY}px)`;
+                }
+            }
+        }
+
+        function handleEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            const card = cards[currentIdx];
+            cards.forEach(c => c.style.transition = 'all 0.5s cubic-bezier(0.2, 1, 0.3, 1)');
+
+            if (dragAxis === 'h') {
+                if (deltaX < -50) { card.style.transform = 'translateX(-100%)'; card.dataset.hPos = -100; }
+                else if (deltaX > 50) { card.style.transform = 'translateX(0%)'; card.dataset.hPos = 0; }
+                else card.style.transform = `translateX(${card.dataset.hPos}%)`;
+            } else if (dragAxis === 'v') {
+                if (deltaY < -100 && currentIdx < cards.length - 1) {
+                    card.style.transform = `translateX(${card.dataset.hPos}%) translateY(-100%)`;
+                    currentIdx++;
+                } else if (deltaY > 100 && currentIdx > 0) {
+                    currentIdx--;
+                    cards[currentIdx].style.transform = `translateX(${cards[currentIdx].dataset.hPos}%) translateY(0%)`;
+                } else {
+                    card.style.transform = `translateX(${card.dataset.hPos}%) translateY(0%)`;
+                    if (currentIdx > 0) cards[currentIdx-1].style.transform = `translateX(${cards[currentIdx-1].dataset.hPos}%) translateY(-100%)`;
+                }
+                updateProgressUI();
+            }
+            deltaX = 0; deltaY = 0;
+        }
+
+        window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchend', handleEnd);
+
+        updateProgressUI();
+    </script>
+</body>
+</html>
