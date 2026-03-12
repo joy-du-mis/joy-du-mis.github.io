@@ -1,268 +1,377 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocab Reels - Ultimate Edition</title>
-    <style>
-        :root {
-            --word-bg: #121212;
-            --meaning-bg: #1a237e;
-            --accent: #00f2ea;
-            --panel-bg: rgba(255, 255, 255, 0.15);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocabulary Reels</title>
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+<style>
 
-        body {
-            background: #000;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            touch-action: none;
-        }
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:sans-serif;
+}
 
-        #header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1001;
-            pointer-events: none;
-        }
+body{
+background:#121212;
+overflow:hidden;
+color:white;
+height:100vh;
+}
 
-        #progress-panel {
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            width: 60px; height: 60px; border-radius: 50%;
-            position: relative;
-        }
+#app{
+height:100vh;
+width:100vw;
+position:relative;
+overflow:hidden;
+}
 
-        #progress-panel.completed {
-            width: 150px; height: 45px; border-radius: 12px;
-            background: var(--accent); color: #000;
-        }
+.card{
+position:absolute;
+width:100%;
+height:100%;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+font-weight:600;
+transition:transform .45s cubic-bezier(.22,.61,.36,1);
+}
 
-        #counter-text { position: absolute; font-size: 1.3rem; font-weight: 800; transition: opacity 0.3s; }
-        #completion-msg { position: absolute; font-size: 0.85rem; font-weight: 900; text-transform: uppercase; opacity: 0; white-space: nowrap; transform: scale(0.8); transition: all 0.4s; }
-        #progress-panel.completed #counter-text { opacity: 0; pointer-events: none; }
-        #progress-panel.completed #completion-msg { opacity: 1; transform: scale(1); }
+.word{
+font-size:clamp(40px,8vw,80px);
+}
 
-        .progress-ring { position: absolute; transition: opacity 0.3s; }
-        .progress-ring__circle { transition: stroke-dashoffset 0.4s ease; transform: rotate(-90deg); transform-origin: 50% 50%; stroke: var(--accent); }
-        #progress-panel.completed .progress-ring { opacity: 0; }
+.meaning{
+font-size:clamp(22px,5vw,40px);
+opacity:.9;
+}
 
-        #viewport { width: 100%; height: 100%; position: relative; }
-        .card-stack { position: absolute; width: 100%; height: 100%; will-change: transform; display: flex; transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1); }
-        .page { min-width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; }
-        .word-page { background: var(--word-bg); }
-        .meaning-page { background: var(--meaning-bg); }
-        .text { font-size: clamp(2.5rem, 8vw, 3.5rem); font-weight: 900; letter-spacing: -1px; }
-        .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 12px; }
+.card-inner{
+display:flex;
+width:200%;
+height:100%;
+transition:transform .4s cubic-bezier(.22,.61,.36,1);
+}
 
-        .hint { position: absolute; bottom: 25px; width: 100%; text-align: center; font-size: 0.7rem; opacity: 0.25; z-index: 1000; }
+.side{
+width:100%;
+display:flex;
+align-items:center;
+justify-content:center;
+flex-direction:column;
+}
 
-        #confetti-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1002; }
-    </style>
+.progress{
+position:absolute;
+top:20px;
+left:50%;
+transform:translateX(-50%);
+width:70px;
+height:70px;
+border-radius:50%;
+backdrop-filter:blur(10px);
+background:rgba(255,255,255,.05);
+display:flex;
+align-items:center;
+justify-content:center;
+transition:.4s;
+}
+
+.progress.completed{
+width:180px;
+border-radius:20px;
+background:cyan;
+}
+
+.progress span{
+font-size:18px;
+}
+
+.progress svg{
+position:absolute;
+width:100%;
+height:100%;
+transform:rotate(-90deg);
+}
+
+.progress circle{
+fill:none;
+stroke:cyan;
+stroke-width:5;
+stroke-dasharray:200;
+stroke-dashoffset:200;
+transition:.3s;
+}
+
+.completed span{
+opacity:0;
+}
+
+.completed::after{
+content:"COMPLETED";
+font-weight:700;
+color:black;
+}
+
+canvas{
+position:fixed;
+pointer-events:none;
+top:0;
+left:0;
+}
+
+</style>
 </head>
+
 <body>
 
-    <div id="header">
-        <div id="progress-panel">
-            <svg class="progress-ring" width="60" height="60">
-                <circle stroke="rgba(255,255,255,0.08)" stroke-width="4" fill="transparent" r="26" cx="30" cy="30"/>
-                <circle id="progress-circle" class="progress-ring__circle" stroke-width="4" fill="transparent" r="26" cx="30" cy="30"/>
-            </svg>
-            <div id="counter-text">1</div>
-            <div id="completion-msg">Completed</div>
-        </div>
-    </div>
+<div id="app"></div>
 
-    <div id="viewport"></div>
-    <div class="hint">Swipe L/R for Meaning • Swipe U/D for Words</div>
-    <canvas id="confetti-canvas"></canvas>
+<div class="progress" id="progress">
+<svg>
+<circle cx="35" cy="35" r="30"></circle>
+</svg>
+<span id="counter">1</span>
+</div>
 
-    <script>
-        const vocab = [
-            { en: "Meticulous", bn: "অতি সতর্ক" },
-            { en: "Infallible", bn: "নির্ভুল" },
-            { en: "Euphoria", bn: "উচ্ছ্বাস" },
-            { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
-            { en: "Nuance", bn: "সামান্য পার্থক্য" },
-            { en: "Vibrant", bn: "প্রাণবন্ত" }
-        ];
+<canvas id="confetti"></canvas>
 
-        const viewport = document.getElementById('viewport');
-        const circle = document.getElementById('progress-circle');
-        const panel = document.getElementById('progress-panel');
-        const counter = document.getElementById('counter-text');
-        const radius = circle.r.baseVal.value;
-        const circumference = radius * 2 * Math.PI;
-        
-        circle.style.strokeDasharray = `${circumference} ${circumference}`;
+<script>
 
-        let currentIdx = 0;
-        let startX = 0, startY = 0, deltaX = 0, deltaY = 0, isDragging = false, dragAxis = null;
-        const cards = [];
+const vocab=[
+{en:"Admonish",bn:"ধমক দেওয়া"},
+{en:"Aesthetic",bn:"নান্দনিক"},
+{en:"Affectation",bn:"কৃত্রিম আচরণ"},
+{en:"Benevolent",bn:"দয়ালু"},
+{en:"Candid",bn:"সৎ"}
+]
 
-        function updateProgressUI() {
-            const currentNumber = currentIdx + 1;
-            counter.textContent = currentNumber;
-            const percent = (currentNumber / vocab.length) * 100;
-            circle.style.strokeDashoffset = circumference - (percent / 100 * circumference);
-            
-            if (currentNumber === vocab.length) {
-                panel.classList.add('completed');
-                triggerConfetti();
-            } else {
-                panel.classList.remove('completed');
-            }
-        }
+const app=document.getElementById("app")
+const circle=document.querySelector("circle")
+const counter=document.getElementById("counter")
+const progress=document.getElementById("progress")
 
-        function forceEnglish(index) {
-            if (index < 0 || index >= cards.length) return;
-            cards[index].dataset.hPos = 0;
-        }
+let index=0
+let startX=0
+let startY=0
+let dragging=false
+let direction=null
 
-        vocab.forEach((item, i) => {
-            const el = document.createElement('div');
-            el.className = 'card-stack';
-            el.style.zIndex = vocab.length - i;
-            el.dataset.hPos = 0;
-            el.innerHTML = `
-                <div class="page word-page"><div class="label">English Word</div><div class="text">${item.en}</div></div>
-                <div class="page meaning-page"><div class="label" style="color:var(--accent)">Bangla Meaning</div><div class="text" style="color:var(--accent)">${item.bn}</div></div>
-            `;
-            viewport.appendChild(el);
-            cards.push(el);
-        });
+function createCards(){
 
-        function handleStart(x, y) {
-            isDragging = true; startX = x; startY = y; dragAxis = null;
-            cards.forEach(c => c.style.transition = 'none');
-        }
+vocab.forEach((v,i)=>{
 
-        function handleMove(x, y) {
-            if (!isDragging) return;
-            deltaX = x - startX; deltaY = y - startY;
+let card=document.createElement("div")
+card.className="card"
+card.style.zIndex=vocab.length-i
 
-            if (!dragAxis) {
-                if (Math.abs(deltaX) > Math.abs(deltaY)) dragAxis = 'h';
-                else if (Math.abs(deltaY) > 5) dragAxis = 'v';
-            }
+let inner=document.createElement("div")
+inner.className="card-inner"
 
-            if (dragAxis === 'h') {
-                const currentH = parseInt(cards[currentIdx].dataset.hPos);
-                let moveX = currentH + (deltaX / window.innerWidth * 100);
-                moveX = Math.min(0, Math.max(-100, moveX));
-                cards[currentIdx].style.transform = `translateX(${moveX}%)`;
-            } else if (dragAxis === 'v') {
-                if (deltaY < 0) forceEnglish(currentIdx);
-                if (deltaY > 0) forceEnglish(currentIdx - 1);
+let front=document.createElement("div")
+front.className="side"
+front.innerHTML=`<div class="word">${v.en}</div>`
 
-                if (deltaY < 0 && currentIdx < cards.length - 1) {
-                    cards[currentIdx].style.transform = `translateX(0%) translateY(${deltaY}px)`;
-                } else if (deltaY > 0 && currentIdx > 0) {
-                    const prev = cards[currentIdx-1];
-                    prev.style.transform = `translateX(0%) translateY(${-window.innerHeight + deltaY}px)`;
-                }
-            }
-        }
+let back=document.createElement("div")
+back.className="side"
+back.innerHTML=`<div class="meaning">${v.bn}</div>`
 
-        function handleEnd() {
-            if (!isDragging) return;
-            isDragging = false;
-            const card = cards[currentIdx];
-            cards.forEach(c => c.style.transition = 'all 0.5s cubic-bezier(0.2, 1, 0.3, 1)');
+inner.appendChild(front)
+inner.appendChild(back)
+card.appendChild(inner)
 
-            if (dragAxis === 'h') {
-                if (deltaX < -50) { card.style.transform = 'translateX(-100%)'; card.dataset.hPos = -100; }
-                else if (deltaX > 50) { card.style.transform = 'translateX(0%)'; card.dataset.hPos = 0; }
-                else card.style.transform = `translateX(${card.dataset.hPos}%)`;
-            } else if (dragAxis === 'v') {
-                if (deltaY < -100 && currentIdx < cards.length - 1) {
-                    card.style.transform = `translateX(0%) translateY(-100%)`;
-                    currentIdx++;
-                } else if (deltaY > 100 && currentIdx > 0) {
-                    currentIdx--;
-                    cards[currentIdx].style.transform = `translateX(0%) translateY(0%)`;
-                } else {
-                    card.style.transform = `translateX(${card.dataset.hPos}%) translateY(0%)`;
-                    if (currentIdx > 0) cards[currentIdx-1].style.transform = `translateX(0%) translateY(-100%)`;
-                }
-                updateProgressUI();
-            }
-            deltaX = 0; deltaY = 0;
-        }
+if(i>0) card.style.transform="translateY(100%)"
 
-        // Event Bindings
-        window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
-        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
-        window.addEventListener('mouseup', handleEnd);
-        window.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
-        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
-        window.addEventListener('touchend', handleEnd);
+app.appendChild(card)
 
-        // Confetti Logic
-        const confettiCanvas = document.getElementById('confetti-canvas');
-        const ctx = confettiCanvas.getContext('2d');
-        let pieces = [];
-        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b'];
+})
 
-        function triggerConfetti() {
-            pieces = [];
-            for (let i = 0; i < 150; i++) {
-                pieces.push({
-                    x: Math.random() * confettiCanvas.width,
-                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
-                    r: Math.random() * 6 + 4,
-                    d: Math.random() * 150,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    tilt: Math.random() * 10 - 10,
-                    tiltAngleIncremental: Math.random() * 0.07 + 0.05,
-                    tiltAngle: 0
-                });
-            }
-            animateConfetti();
-        }
+}
 
-        function animateConfetti() {
-            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-            pieces.forEach((p, i) => {
-                p.tiltAngle += p.tiltAngleIncremental;
-                p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
-                p.tilt = Math.sin(p.tiltAngle) * 15;
-                if (p.y <= confettiCanvas.height) {
-                    ctx.beginPath();
-                    ctx.lineWidth = p.r / 2;
-                    ctx.strokeStyle = p.color;
-                    ctx.moveTo(p.x + p.tilt + p.r / 4, p.y);
-                    ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
-                    ctx.stroke();
-                }
-            });
-            if (pieces.some(p => p.y <= confettiCanvas.height)) requestAnimationFrame(animateConfetti);
-        }
+createCards()
 
-        window.addEventListener('resize', () => {
-            confettiCanvas.width = window.innerWidth;
-            confettiCanvas.height = window.innerHeight;
-        });
-        
-        confettiCanvas.width = window.innerWidth;
-        confettiCanvas.height = window.innerHeight;
-        updateProgressUI();
-    </script>
+const cards=[...document.querySelectorAll(".card")]
+
+function updateProgress(){
+
+counter.textContent=index+1
+
+let percent=(index+1)/vocab.length
+circle.style.strokeDashoffset=200-(200*percent)
+
+if(index===vocab.length-1){
+progress.classList.add("completed")
+launchConfetti()
+}
+
+}
+
+updateProgress()
+
+function resetHorizontal(){
+
+cards.forEach(card=>{
+card.querySelector(".card-inner").style.transform="translateX(0%)"
+})
+
+}
+
+function next(){
+
+if(index>=vocab.length-1)return
+
+cards[index].style.transform="translateY(-100%)"
+
+index++
+
+resetHorizontal()
+
+cards[index].style.transform="translateY(0%)"
+
+updateProgress()
+
+}
+
+function prev(){
+
+if(index<=0)return
+
+cards[index].style.transform="translateY(100%)"
+
+index--
+
+resetHorizontal()
+
+cards[index].style.transform="translateY(0%)"
+
+}
+
+app.addEventListener("touchstart",e=>{
+
+dragging=true
+startX=e.touches[0].clientX
+startY=e.touches[0].clientY
+direction=null
+
+})
+
+app.addEventListener("touchmove",e=>{
+
+if(!dragging)return
+
+let dx=e.touches[0].clientX-startX
+let dy=e.touches[0].clientY-startY
+
+if(!direction){
+direction=Math.abs(dx)>Math.abs(dy)?"h":"v"
+}
+
+if(direction==="h"){
+
+cards[index].querySelector(".card-inner")
+.style.transform=`translateX(${dx}px)`
+
+}
+
+if(direction==="v"){
+
+cards[index].style.transition="none"
+cards[index].style.transform=`translateY(${dy}px)`
+
+}
+
+})
+
+app.addEventListener("touchend",e=>{
+
+dragging=false
+
+let dx=e.changedTouches[0].clientX-startX
+let dy=e.changedTouches[0].clientY-startY
+
+cards[index].style.transition=".4s cubic-bezier(.22,.61,.36,1)"
+
+if(direction==="h"){
+
+if(dx<-80){
+cards[index].querySelector(".card-inner")
+.style.transform="translateX(-50%)"
+}else{
+cards[index].querySelector(".card-inner")
+.style.transform="translateX(0%)"
+}
+
+}
+
+if(direction==="v"){
+
+if(dy<-80) next()
+else if(dy>80) prev()
+else cards[index].style.transform="translateY(0)"
+
+}
+
+})
+
+app.addEventListener("wheel",e=>{
+
+if(e.deltaY>0) next()
+else prev()
+
+})
+
+/* confetti */
+
+const canvas=document.getElementById("confetti")
+const ctx=canvas.getContext("2d")
+
+canvas.width=innerWidth
+canvas.height=innerHeight
+
+let confetti=[]
+
+function launchConfetti(){
+
+for(let i=0;i<150;i++){
+
+confetti.push({
+
+x:Math.random()*canvas.width,
+y:-20,
+size:5+Math.random()*5,
+speed:2+Math.random()*3,
+angle:Math.random()*Math.PI*2
+
+})
+
+}
+
+animate()
+
+}
+
+function animate(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height)
+
+confetti.forEach(p=>{
+
+p.y+=p.speed
+p.x+=Math.sin(p.angle)
+
+ctx.fillStyle=`hsl(${Math.random()*360},80%,60%)`
+ctx.fillRect(p.x,p.y,p.size,p.size)
+
+})
+
+requestAnimationFrame(animate)
+
+}
+
+</script>
+
 </body>
 </html>
