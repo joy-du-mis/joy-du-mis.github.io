@@ -2,323 +2,167 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocab Reels - Advanced Progress</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Vocab Cards</title>
     <style>
         :root {
-            --word-bg: #121212;
-            --meaning-bg: #1a237e;
-            --accent: #00f2ea;
-            --panel-bg: rgba(255, 255, 255, 0.1);
-            --finish-bg: #000;
+            --bg-color: #000000;
+            --text-color: #ffffff;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            background: #000;
-            color: white;
-            font-family: -apple-system, system-ui, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        /* Progress Container */
-        #progress-panel {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1001;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--panel-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            overflow: hidden;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-        }
-
-        #progress-panel.completed {
-            width: 140px;
-            height: 40px;
-            border-radius: 8px;
-            background: var(--accent);
-            color: #000;
-        }
-
-        #counter-text {
-            position: absolute;
-            font-size: 1.2rem;
-            font-weight: bold;
-            transition: opacity 0.3s;
-        }
-
-        #completion-msg {
-            position: absolute;
-            font-size: 0.9rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0;
-            white-space: nowrap;
-        }
-
-        #progress-panel.completed #counter-text { opacity: 0; }
-        #progress-panel.completed #completion-msg { opacity: 1; }
-
-        .progress-ring {
-            position: absolute;
-            transition: opacity 0.4s;
-        }
-
-        .progress-ring__circle {
-            transition: stroke-dashoffset 0.35s;
-            transform: rotate(-90deg);
-            transform-origin: 50% 50%;
-            stroke: var(--accent);
-        }
-
-        #progress-panel.completed .progress-ring { opacity: 0; }
-
-        /* Card Setup */
-        #viewport { width: 100%; height: 100%; position: relative; }
-
-        .card-stack {
-            position: absolute;
-            width: 100%;
+        body, html {
+            margin: 0;
+            padding: 0;
             height: 100%;
-            will-change: transform;
-            display: flex;
-            transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
         }
 
-        .page {
-            min-width: 100%;
+        /* Vertical Container (Scroll Down for New Card) */
+        .vertical-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+        }
+
+        .word-wrapper {
+            height: 100vh;
+            width: 100vw;
+            scroll-snap-align: start;
+        }
+
+        /* Horizontal Slider (Swipe Left/Right for Bangla) */
+        .horizontal-slider {
+            display: flex;
+            width: 100vw;
+            height: 100%;
+            overflow-x: scroll;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none; /* Hide scrollbar Firefox */
+        }
+
+        .horizontal-slider::-webkit-scrollbar {
+            display: none; /* Hide scrollbar Chrome/Safari */
+        }
+
+        .card-side {
+            min-width: 100vw;
             height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            scroll-snap-align: start;
             text-align: center;
-            padding: 40px;
         }
 
-        .word-page { background: var(--word-bg); }
-        .meaning-page { background: var(--meaning-bg); }
-        .finish-page { 
-            background: var(--finish-bg); 
-            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+        /* Styling for the Content */
+        .word {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--text-color);
+            margin-bottom: 10px;
         }
-        
-        .text { font-size: 3rem; font-weight: 900; }
-        .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 10px; }
-        
-        .congrats-icon { font-size: 5rem; margin-bottom: 20px; display: block; }
 
-        /* Confetti Styles */
-        .confetti {
+        .language-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
             position: absolute;
-            width: 10px;
-            height: 10px;
-            top: -10px;
-            z-index: 1002;
-            pointer-events: none;
-            animation: fall linear forwards;
+            bottom: 10%;
         }
 
-        @keyframes fall {
-            to {
-                transform: translateY(100vh) rotate(720deg);
-            }
+        .hint {
+            position: absolute;
+            bottom: 5%;
+            font-size: 0.7rem;
+            color: #444;
         }
+
+        /* Black/White alternating or consistent */
+        .english-side { background-color: #000; color: #fff; }
+        .bangla-side { background-color: #fff; color: #000; }
+        .bangla-side .word { color: #000; }
     </style>
 </head>
 <body>
 
-    <div id="progress-panel">
-        <svg class="progress-ring" width="60" height="60">
-            <circle stroke="rgba(255,255,255,0.1)" stroke-width="4" fill="transparent" r="26" cx="30" cy="30"/>
-            <circle id="progress-circle" class="progress-ring__circle" stroke-width="4" fill="transparent" r="26" cx="30" cy="30"/>
-        </svg>
-        <div id="counter-text">1</div>
-        <div id="completion-msg">Finished!</div>
-    </div>
+    <div class="vertical-container" id="main-container">
+        <div class="word-wrapper">
+            <div class="horizontal-slider">
+                <div class="card-side english-side">
+                    <div class="word">Resilient</div>
+                    <div class="language-label">English</div>
+                    <div class="hint">Swipe left for Bangla ⮕</div>
+                </div>
+                <div class="card-side bangla-side">
+                    <div class="word">স্থিতিস্থাপক</div>
+                    <div class="language-label">Bengali</div>
+                    <div class="hint">⬅ Swipe right for English</div>
+                </div>
+            </div>
+        </div>
 
-    <div id="viewport"></div>
+        <div class="word-wrapper">
+            <div class="horizontal-slider">
+                <div class="card-side english-side">
+                    <div class="word">Ephemeral</div>
+                    <div class="language-label">English</div>
+                    <div class="hint">Swipe left for Bangla ⮕</div>
+                </div>
+                <div class="card-side bangla-side">
+                    <div class="word">ক্ষণস্থায়ী</div>
+                    <div class="language-label">Bengali</div>
+                    <div class="hint">⬅ Swipe right for English</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        const vocab = [
-    { en: "Infallible", bn: "নির্ভুল" },
-    { en: "Euphoria", bn: "উচ্ছ্বাস" },
-    { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
-    { en: "Nuance", bn: "সামান্য পার্থক্য" },
-    { en: "Vibrant", bn: "প্রাণবন্ত" }
-];
+        const container = document.getElementById('main-container');
+        
+        // Data for infinite scrolling
+        const vocabulary = [
+            { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
+            { en: "Eloquence", bn: "বাগ্মিতা" },
+            { en: "Melancholy", bn: "বিষণ্ণতা" },
+            { en: "Luminous", bn: "উজ্জ্বল" }
+        ];
 
-const viewport = document.getElementById('viewport');
-const circle = document.getElementById('progress-circle');
-const panel = document.getElementById('progress-panel');
-const counter = document.getElementById('counter-text');
+        let index = 0;
 
-const radius = circle.r.baseVal.value;
-const circumference = radius * 2 * Math.PI;
-circle.style.strokeDasharray = `${circumference} ${circumference}`;
-
-let currentIdx = 0;
-let startX = 0, startY = 0, deltaX = 0, deltaY = 0, isDragging = false, dragAxis = null;
-const cards = [];
-
-// --- Confetti Effect ---
-function triggerConfetti() {
-    for (let i = 0; i < 50; i++) {
-        const confetti = document.createElement('div');
-        confetti.className = 'confetti';
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-        confetti.style.opacity = Math.random();
-        document.body.appendChild(confetti);
-        // Clean up DOM
-        setTimeout(() => confetti.remove(), 4000);
-    }
-}
-
-function updateProgressUI() {
-    // UI reflects progress through the vocab list
-    const displayNum = Math.min(currentIdx + 1, vocab.length);
-    counter.textContent = displayNum;
-
-    const percent = (displayNum / vocab.length) * 100;
-    circle.style.strokeDashoffset = circumference - (percent / 100 * circumference);
-
-    // Trigger Completion UI and Confetti on the last card
-    if (currentIdx === vocab.length) {
-        panel.classList.add('completed');
-        triggerConfetti();
-    } else {
-        panel.classList.remove('completed');
-    }
-}
-
-// --- Initialize Cards ---
-vocab.forEach((item, i) => {
-    const el = document.createElement('div');
-    el.className = 'card-stack';
-    el.style.zIndex = (vocab.length + 1) - i;
-    el.dataset.hPos = 0; // Tracks total horizontal shift
-    el.innerHTML = `
-        <div class="page word-page"><div class="label">English</div><div class="text">${item.en}</div></div>
-        <div class="page meaning-page"><div class="label" style="color:var(--accent)">Bangla</div><div class="text" style="color:var(--accent)">${item.bn}</div></div>
-    `;
-    viewport.appendChild(el);
-    cards.push(el);
-});
-
-// Final Congratulations Card
-const finishCard = document.createElement('div');
-finishCard.className = 'card-stack';
-finishCard.style.zIndex = 0;
-finishCard.dataset.hPos = 0;
-finishCard.innerHTML = `
-    <div class="page finish-page">
-        <span class="congrats-icon">🎉</span>
-        <div class="label" style="color:var(--accent)">Session Complete</div>
-        <div class="text">Great Job!</div>
-        <p style="margin-top:20px; opacity:0.6">You've mastered ${vocab.length} words.</p>
-    </div>
-`;
-viewport.appendChild(finishCard);
-cards.push(finishCard);
-
-// --- Gesture Handling ---
-
-function handleStart(x, y) {
-    isDragging = true;
-    startX = x;
-    startY = y;
-    dragAxis = null;
-    cards.forEach(c => c.style.transition = 'none');
-}
-
-function handleMove(x, y) {
-    if (!isDragging) return;
-    deltaX = x - startX;
-    deltaY = y - startY;
-
-    if (!dragAxis) {
-        if (Math.abs(deltaX) > Math.abs(deltaY)) dragAxis = 'h';
-        else if (Math.abs(deltaY) > 5) dragAxis = 'v';
-    }
-
-    const card = cards[currentIdx];
-
-    if (dragAxis === 'h') {
-        // Infinite Horizontal logic: Allow movement in both directions
-        const currentH = parseFloat(card.dataset.hPos);
-        let moveX = currentH + (deltaX / window.innerWidth * 100);
-        card.style.transform = `translateX(${moveX}%)`;
-    } else if (dragAxis === 'v') {
-        // Vertical Swiping logic
-        const h = card.dataset.hPos;
-        if (deltaY < 0 && currentIdx < cards.length - 1) {
-            card.style.transform = `translateX(${h}%) translateY(${deltaY}px)`;
-        } else if (deltaY > 0 && currentIdx > 0) {
-            const prev = cards[currentIdx - 1];
-            prev.style.transform = `translateX(${prev.dataset.hPos}%) translateY(${-window.innerHeight + deltaY}px)`;
+        // Function to create and append a new card
+        function createCard(data) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'word-wrapper';
+            wrapper.innerHTML = `
+                <div class="horizontal-slider">
+                    <div class="card-side english-side">
+                        <div class="word">${data.en}</div>
+                        <div class="language-label">English</div>
+                        <div class="hint">Swipe left for Bangla ⮕</div>
+                    </div>
+                    <div class="card-side bangla-side">
+                        <div class="word">${data.bn}</div>
+                        <div class="language-label">Bengali</div>
+                        <div class="hint">⬅ Swipe right for English</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(wrapper);
         }
-    }
-}
 
-function handleEnd() {
-    if (!isDragging) return;
-    isDragging = false;
-    const card = cards[currentIdx];
-    cards.forEach(c => c.style.transition = 'all 0.5s cubic-bezier(0.2, 1, 0.3, 1)');
-
-    if (dragAxis === 'h') {
-        let currentH = parseFloat(card.dataset.hPos);
-        // If swipe distance is more than 50px
-        if (Math.abs(deltaX) > 50) {
-            // Snap to next 100% increment based on direction
-            currentH = deltaX < 0 ? currentH - 100 : currentH + 100;
-        }
-        card.style.transform = `translateX(${currentH}%)`;
-        card.dataset.hPos = currentH;
-    } else if (dragAxis === 'v') {
-        if (deltaY < -100 && currentIdx < cards.length - 1) {
-            card.style.transform = `translateX(${card.dataset.hPos}%) translateY(-100%)`;
-            currentIdx++;
-        } else if (deltaY > 100 && currentIdx > 0) {
-            currentIdx--;
-            cards[currentIdx].style.transform = `translateX(${cards[currentIdx].dataset.hPos}%) translateY(0%)`;
-        } else {
-            // Snap back
-            card.style.transform = `translateX(${card.dataset.hPos}%) translateY(0%)`;
-            if (currentIdx > 0) cards[currentIdx - 1].style.transform = `translateX(${cards[currentIdx - 1].dataset.hPos}%) translateY(-100%)`;
-        }
-        updateProgressUI();
-    }
-    deltaX = 0;
-    deltaY = 0;
-}
-
-// --- Listeners ---
-window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
-window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
-window.addEventListener('mouseup', handleEnd);
-
-window.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
-window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
-window.addEventListener('touchend', handleEnd);
-
-// Initial UI Call
-updateProgressUI();
+        // Infinite Scroll Logic
+        container.addEventListener('scroll', () => {
+            // If user scrolls near the bottom, add a new card
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+                createCard(vocabulary[index]);
+                index = (index + 1) % vocabulary.length; // Loop through the array
+            }
+        });
     </script>
 </body>
 </html>
