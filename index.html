@@ -3,68 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocab Reels</title>
+    <title>Smooth Vocab Reels</title>
     <style>
         :root {
-            --bg-color: #000000;
-            --card-bg: #121212;
-            --accent: #00f2ea; /* Insta-style cyan */
-            --text-main: #ffffff;
+            --bg: #000;
+            --card: #111;
+            --accent: #00f2ea;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: -apple-system, system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background: var(--bg);
+            color: white;
+            font-family: -apple-system, sans-serif;
             height: 100vh;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            touch-action: none;
+            touch-action: none; /* Critical: stops browser bounce */
         }
 
-        #app-container {
-            width: 100%;
-            max-width: 450px;
-            height: 100%;
-            position: relative;
-            background: var(--bg-color);
-        }
-
-        /* Progress Bar Container */
-        #progress-container {
-            position: absolute;
-            top: 10px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            padding: 0 10px;
-            gap: 4px;
-            z-index: 10;
-        }
-
-        .bar {
-            height: 2px;
-            flex: 1;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .bar-inner {
-            height: 100%;
-            width: 0%;
-            background: var(--text-main);
-            transition: width 0.3s;
-        }
-
-        /* Card System */
-        #stage {
+        #viewport {
             width: 100%;
             height: 100%;
             position: relative;
+            perspective: 1000px;
         }
 
         .card {
@@ -74,161 +36,147 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            background: var(--card);
             padding: 40px;
             text-align: center;
-            background: var(--card-bg);
-            transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s;
+            will-change: transform; /* Optimization for smooth GPU movement */
+            border-top: 1px solid #222;
         }
 
-        .english {
-            font-size: 3rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-            margin-bottom: 15px;
-        }
+        .english { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; }
+        .bangla { font-size: 2.2rem; color: var(--accent); transition: opacity 0.3s; }
+        .hidden { opacity: 0; pointer-events: none; }
 
-        .bangla {
-            font-size: 2rem;
-            color: var(--accent);
-            font-weight: 500;
-            transition: opacity 0.3s, transform 0.3s;
-        }
-
-        .hidden {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        /* Card Positioning States */
-        .active { z-index: 2; transform: translateY(0) scale(1); opacity: 1; }
-        .below { z-index: 3; transform: translateY(100%); }
-        .above { z-index: 3; transform: translateY(-100%); }
-        .exit-up { transform: translateY(-20%) scale(0.9); opacity: 0.4; z-index: 1; }
-        .exit-down { transform: translateY(20%) scale(0.9); opacity: 0.4; z-index: 1; }
-
-        /* Instructions Overlay */
-        #hint {
+        /* Progress Bar */
+        #progress {
             position: absolute;
-            bottom: 30px;
-            font-size: 0.8rem;
-            opacity: 0.5;
-            width: 100%;
-            text-align: center;
-            z-index: 5;
+            top: 15px;
+            width: 90%;
+            left: 5%;
+            display: flex;
+            gap: 5px;
+            z-index: 100;
         }
+        .segment { height: 2px; flex: 1; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
+        .fill { height: 100%; width: 0%; background: #fff; transition: width 0.3s; }
     </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <div id="progress-container"></div>
-        
-        <div id="stage">
-            <div id="card-1" class="card active">
-                <h1 class="english">Start</h1>
-                <h2 class="bangla hidden">শুরু করুন</h2>
-            </div>
-            <div id="card-2" class="card below">
-                <h1 class="english"></h1>
-                <h2 class="bangla hidden"></h2>
-            </div>
-        </div>
+    <div id="progress"></div>
 
-        <div id="hint">Tap to see meaning • Swipe up for next</div>
+    <div id="viewport">
+        <div id="card" class="card">
+            <h1 id="en" class="english">Swipe Up</h1>
+            <h2 id="bn" class="bangla hidden">শুরু করুন</h2>
+        </div>
     </div>
 
     <script>
-        const vocabulary = [
-            { en: "Enthusiastic", bn: "উত্সাহী" },
-            { en: "Magnificent", bn: "চমৎকার" },
-            { en: "Obscure", bn: "অস্পষ্ট" },
-            { en: "Spontaneous", bn: "স্বতঃস্ফূর্ত" },
-            { en: "Versatile", bn: "বহুমুখী" }
+        const vocab = [
+            { en: "Resilient", bn: "স্থিতিস্থাপক" },
+            { en: "Ephemeral", bn: "ক্ষণস্থায়ী" },
+            { en: "Eloquent", bn: "বাকপটু" },
+            { en: "Tenacious", bn: "নাছোড়বান্দা" },
+            { en: "Pragmatic", bn: "বাস্তবধর্মী" }
         ];
 
-        let currentIndex = 0;
+        let idx = 0;
         let startY = 0;
-        let isAnimating = false;
+        let currentY = 0;
+        let isDragging = false;
+        
+        const card = document.getElementById('card');
+        const enEl = document.getElementById('en');
+        const bnEl = document.getElementById('bn');
+        const prog = document.getElementById('progress');
 
-        const stage = document.getElementById('stage');
-        const progressContainer = document.getElementById('progress-container');
-        let cardA = document.getElementById('card-1');
-        let cardB = document.getElementById('card-2');
-
-        // Create Progress Bars
-        vocabulary.forEach((_, i) => {
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            bar.innerHTML = `<div class="bar-inner" id="bar-${i}"></div>`;
-            progressContainer.appendChild(bar);
+        // Build progress segments
+        vocab.forEach((_, i) => {
+            prog.innerHTML += `<div class="segment"><div class="fill" id="p${i}"></div></div>`;
         });
 
-        function updateProgress() {
-            vocabulary.forEach((_, i) => {
-                const inner = document.getElementById(`bar-${i}`);
-                inner.style.width = i <= currentIndex ? '100%' : '0%';
+        function updateUI() {
+            enEl.textContent = vocab[idx].en;
+            bnEl.textContent = vocab[idx].bn;
+            bnEl.classList.add('hidden');
+            vocab.forEach((_, i) => {
+                document.getElementById(`p${i}`).style.width = i <= idx ? '100%' : '0%';
             });
         }
 
-        function setCardData(card, index) {
-            card.querySelector('.english').textContent = vocabulary[index].en;
-            card.querySelector('.bangla').textContent = vocabulary[index].bn;
-            card.querySelector('.bangla').classList.add('hidden');
-        }
+        // Logic for smooth dragging
+        window.addEventListener('touchstart', e => {
+            startY = e.touches[0].clientY;
+            isDragging = true;
+            card.style.transition = 'none'; // Disable transition while finger is down
+        });
 
-        function swipe(direction) {
-            if (isAnimating) return;
+        window.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
             
-            const isNext = direction === 'up';
-            const newIndex = isNext ? currentIndex + 1 : currentIndex - 1;
+            // Allow dragging, but add resistance at the ends of the list
+            if ((idx === 0 && diff > 0) || (idx === vocab.length -1 && diff < 0)) {
+                card.style.transform = `translateY(${diff * 0.2}px)`; 
+            } else {
+                card.style.transform = `translateY(${diff}px)`;
+            }
+        });
 
-            if (newIndex < 0 || newIndex >= vocabulary.length) return;
+        window.addEventListener('touchend', e => {
+            isDragging = false;
+            const diff = currentY - startY;
+            const threshold = window.innerHeight * 0.15; // 15% of screen height to trigger
 
-            isAnimating = true;
-            const activeCard = cardA.classList.contains('active') ? cardA : cardB;
-            const idleCard = activeCard === cardA ? cardB : cardA;
+            card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)'; // Springy snap
 
-            // Prepare idle card
-            idleCard.style.transition = 'none';
-            idleCard.classList.remove('active', 'below', 'above', 'exit-up', 'exit-down');
-            idleCard.classList.add(isNext ? 'below' : 'above');
-            setCardData(idleCard, newIndex);
+            if (diff < -threshold && idx < vocab.length - 1) {
+                // Swipe UP (Next)
+                idx++;
+                animateSlide('up');
+            } else if (diff > threshold && idx > 0) {
+                // Swipe DOWN (Prev)
+                idx--;
+                animateSlide('down');
+            } else {
+                // Snap back to center
+                card.style.transform = `translateY(0)`;
+            }
+            startY = 0;
+            currentY = 0;
+        });
 
-            // Force reflow
-            idleCard.offsetHeight;
-
-            // Start Animation
-            idleCard.style.transition = '';
-            idleCard.classList.remove('below', 'above');
-            idleCard.classList.add('active');
-
-            activeCard.classList.remove('active');
-            activeCard.classList.add(isNext ? 'exit-up' : 'exit-down');
-
-            currentIndex = newIndex;
-            updateProgress();
+        function animateSlide(dir) {
+            // First, push card completely off screen
+            card.style.transform = dir === 'up' ? `translateY(-100%)` : `translateY(100%)`;
+            card.style.opacity = '0';
 
             setTimeout(() => {
-                isAnimating = false;
-            }, 500);
+                updateUI();
+                // Teleport to opposite side instantly
+                card.style.transition = 'none';
+                card.style.transform = dir === 'up' ? `translateY(100%)` : `translateY(-100%)`;
+                
+                // Slide back into center
+                requestAnimationFrame(() => {
+                    card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.3s';
+                    card.style.transform = `translateY(0)`;
+                    card.style.opacity = '1';
+                });
+            }, 100);
         }
 
-        // Tap Interaction
-        document.addEventListener('click', (e) => {
-            const activeCard = cardA.classList.contains('active') ? cardA : cardB;
-            activeCard.querySelector('.bangla').classList.toggle('hidden');
+        // Tap to Reveal
+        window.addEventListener('click', (e) => {
+            // Prevent reveal if the user was just swiping
+            if (Math.abs(startY - currentY) < 5) {
+                bnEl.classList.toggle('hidden');
+            }
         });
 
-        // Touch/Swipe Interaction
-        document.addEventListener('touchstart', e => startY = e.touches[0].clientY);
-        document.addEventListener('touchend', e => {
-            const diff = startY - e.changedTouches[0].clientY;
-            if (Math.abs(diff) > 60) swipe(diff > 0 ? 'up' : 'down');
-        });
-
-        // Initial Setup
-        setCardData(cardA, 0);
-        updateProgress();
+        updateUI();
     </script>
 </body>
 </html>
