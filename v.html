@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Smooth Vocab Reels</title>
+    <title>Interactive Vocab Reels</title>
     <style>
         :root {
             --bg: #000;
-            --card: #111;
+            --word-bg: #121212;
+            --meaning-bg: #004d40;
             --accent: #00f2ea;
         }
 
@@ -19,164 +20,177 @@
             font-family: -apple-system, sans-serif;
             height: 100vh;
             overflow: hidden;
-            touch-action: none; /* Critical: stops browser bounce */
+            touch-action: none; /* Disables browser default scroll */
         }
 
-        #viewport {
+        #app {
             width: 100%;
             height: 100%;
             position: relative;
-            perspective: 1000px;
         }
 
-        .card {
+        /* This container holds all cards vertically */
+        #main-track {
+            width: 100%;
+            height: 100%;
             position: absolute;
-            inset: 0;
+            will-change: transform;
+        }
+
+        .reel-unit {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Horizontal container for Word vs Meaning */
+        .side-track {
+            display: flex;
+            width: 200%; /* Two pages wide */
+            height: 100%;
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        .page {
+            width: 50%; /* One half of the side-track */
+            height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: var(--card);
             padding: 40px;
             text-align: center;
-            will-change: transform; /* Optimization for smooth GPU movement */
-            border-top: 1px solid #222;
+            user-select: none;
         }
 
-        .english { font-size: 3.5rem; font-weight: 800; margin-bottom: 10px; }
-        .bangla { font-size: 2.2rem; color: var(--accent); transition: opacity 0.3s; }
-        .hidden { opacity: 0; pointer-events: none; }
+        .word-page { background: var(--word-bg); }
+        .meaning-page { background: var(--meaning-bg); }
 
-        /* Progress Bar */
-        #progress {
+        .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 10px; }
+        .text { font-size: 3.5rem; font-weight: 900; }
+        
+        .footer-hint {
             position: absolute;
-            top: 15px;
-            width: 90%;
-            left: 5%;
-            display: flex;
-            gap: 5px;
-            z-index: 100;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            opacity: 0.3;
+            z-index: 10;
         }
-        .segment { height: 2px; flex: 1; background: rgba(255,255,255,0.2); border-radius: 2px; overflow: hidden; }
-        .fill { height: 100%; width: 0%; background: #fff; transition: width 0.3s; }
     </style>
 </head>
 <body>
 
-    <div id="progress"></div>
-
-    <div id="viewport">
-        <div id="card" class="card">
-            <h1 id="en" class="english">Swipe Up</h1>
-            <h2 id="bn" class="bangla hidden">শুরু করুন</h2>
-        </div>
+    <div id="app">
+        <div id="main-track"></div>
+        <div class="footer-hint">Tap to Flip • Drag/Scroll vertically for Next</div>
     </div>
 
     <script>
         const vocab = [
-            { en: "Resilient", bn: "স্থিতিস্থাপক" },
-            { en: "Ephemeral", bn: "ক্ষণস্থায়ী" },
-            { en: "Eloquent", bn: "বাকপটু" },
-            { en: "Tenacious", bn: "নাছোড়বান্দা" },
-            { en: "Pragmatic", bn: "বাস্তবধর্মী" }
+            { en: "Infallible", bn: "নির্ভুল" },
+            { en: "Euphoria", bn: "উচ্ছ্বাস" },
+            { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
+            { en: "Nuance", bn: "সামান্য পার্থক্য" },
+            { en: "Vibrant", bn: "প্রাণবন্ত" }
         ];
 
-        let idx = 0;
+        const track = document.getElementById('main-track');
+        let currentIdx = 0;
         let startY = 0;
-        let currentY = 0;
+        let scrollY = 0;
         let isDragging = false;
-        
-        const card = document.getElementById('card');
-        const enEl = document.getElementById('en');
-        const bnEl = document.getElementById('bn');
-        const prog = document.getElementById('progress');
+        let winH = window.innerHeight;
 
-        // Build progress segments
-        vocab.forEach((_, i) => {
-            prog.innerHTML += `<div class="segment"><div class="fill" id="p${i}"></div></div>`;
-        });
-
-        function updateUI() {
-            enEl.textContent = vocab[idx].en;
-            bnEl.textContent = vocab[idx].bn;
-            bnEl.classList.add('hidden');
-            vocab.forEach((_, i) => {
-                document.getElementById(`p${i}`).style.width = i <= idx ? '100%' : '0%';
+        // 1. Build the Reels
+        vocab.forEach((item, i) => {
+            const unit = document.createElement('div');
+            unit.className = 'reel-unit';
+            unit.innerHTML = `
+                <div class="side-track" id="side-${i}">
+                    <div class="page word-page">
+                        <div class="label">English</div>
+                        <div class="text">${item.en}</div>
+                    </div>
+                    <div class="page meaning-page">
+                        <div class="label">Bangla</div>
+                        <div class="text" style="color:var(--accent)">${item.bn}</div>
+                    </div>
+                </div>
+            `;
+            // Tap logic per card
+            unit.addEventListener('click', (e) => {
+                const sideTrack = document.getElementById(`side-${i}`);
+                const isFlipped = sideTrack.style.transform === 'translateX(-50%)';
+                sideTrack.style.transform = isFlipped ? 'translateX(0%)' : 'translateX(-50%)';
             });
-        }
+            track.appendChild(unit);
+        });
 
-        // Logic for smooth dragging
-        window.addEventListener('touchstart', e => {
-            startY = e.touches[0].clientY;
+        // 2. Interactive Dragging (Touch & Mouse)
+        const startDrag = (y) => {
             isDragging = true;
-            card.style.transition = 'none'; // Disable transition while finger is down
-        });
+            startY = y;
+            track.style.transition = 'none';
+        };
 
-        window.addEventListener('touchmove', e => {
+        const moveDrag = (y) => {
             if (!isDragging) return;
-            currentY = e.touches[0].clientY;
-            const diff = currentY - startY;
-            
-            // Allow dragging, but add resistance at the ends of the list
-            if ((idx === 0 && diff > 0) || (idx === vocab.length -1 && diff < 0)) {
-                card.style.transform = `translateY(${diff * 0.2}px)`; 
-            } else {
-                card.style.transform = `translateY(${diff}px)`;
-            }
-        });
+            const delta = y - startY;
+            // The position is current index offset + the drag amount
+            const moveAmount = (-currentIdx * winH) + delta;
+            track.style.transform = `translateY(${moveAmount}px)`;
+            scrollY = delta;
+        };
 
-        window.addEventListener('touchend', e => {
+        const endDrag = () => {
+            if (!isDragging) return;
             isDragging = false;
-            const diff = currentY - startY;
-            const threshold = window.innerHeight * 0.15; // 15% of screen height to trigger
-
-            card.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1)'; // Springy snap
-
-            if (diff < -threshold && idx < vocab.length - 1) {
-                // Swipe UP (Next)
-                idx++;
-                animateSlide('up');
-            } else if (diff > threshold && idx > 0) {
-                // Swipe DOWN (Prev)
-                idx--;
-                animateSlide('down');
-            } else {
-                // Snap back to center
-                card.style.transform = `translateY(0)`;
+            track.style.transition = 'transform 0.5s cubic-bezier(0.15, 1, 0.3, 1)';
+            
+            // Snap Logic
+            if (scrollY < -100 && currentIdx < vocab.length - 1) {
+                currentIdx++;
+            } else if (scrollY > 100 && currentIdx > 0) {
+                currentIdx--;
             }
-            startY = 0;
-            currentY = 0;
+            
+            track.style.transform = `translateY(-${currentIdx * 100}vh)`;
+            scrollY = 0;
+        };
+
+        // Touch Events
+        window.addEventListener('touchstart', e => startDrag(e.touches[0].clientY));
+        window.addEventListener('touchmove', e => moveDrag(e.touches[0].clientY));
+        window.addEventListener('touchend', endDrag);
+
+        // Mouse Events
+        window.addEventListener('mousedown', e => startDrag(e.clientY));
+        window.addEventListener('mousemove', e => moveDrag(e.clientY));
+        window.addEventListener('mouseup', endDrag);
+
+        // 3. Smooth Wheel Support (Simulating Drag)
+        let wheelTimeout;
+        window.addEventListener('wheel', e => {
+            if (Math.abs(e.deltaY) < 10) return;
+            
+            // For mouse wheel, we auto-snap
+            clearTimeout(wheelTimeout);
+            wheelTimeout = setTimeout(() => {
+                if (e.deltaY > 0 && currentIdx < vocab.length - 1) {
+                    currentIdx++;
+                } else if (e.deltaY < 0 && currentIdx > 0) {
+                    currentIdx--;
+                }
+                track.style.transition = 'transform 0.6s cubic-bezier(0.2, 1, 0.3, 1)';
+                track.style.transform = `translateY(-${currentIdx * 100}vh)`;
+            }, 50);
         });
 
-        function animateSlide(dir) {
-            // First, push card completely off screen
-            card.style.transform = dir === 'up' ? `translateY(-100%)` : `translateY(100%)`;
-            card.style.opacity = '0';
+        window.addEventListener('resize', () => winH = window.innerHeight);
 
-            setTimeout(() => {
-                updateUI();
-                // Teleport to opposite side instantly
-                card.style.transition = 'none';
-                card.style.transform = dir === 'up' ? `translateY(100%)` : `translateY(-100%)`;
-                
-                // Slide back into center
-                requestAnimationFrame(() => {
-                    card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.3s';
-                    card.style.transform = `translateY(0)`;
-                    card.style.opacity = '1';
-                });
-            }, 100);
-        }
-
-        // Tap to Reveal
-        window.addEventListener('click', (e) => {
-            // Prevent reveal if the user was just swiping
-            if (Math.abs(startY - currentY) < 5) {
-                bnEl.classList.toggle('hidden');
-            }
-        });
-
-        updateUI();
     </script>
 </body>
 </html>
