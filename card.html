@@ -23,7 +23,7 @@
             touch-action: none;
         }
 
-        /* Progress Container - At the Bottom */
+        /* Bottom Progress Panel */
         #progress-panel {
             position: absolute;
             bottom: 30px;
@@ -41,7 +41,7 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
         #progress-panel.completed {
@@ -162,6 +162,7 @@
             }
         }
 
+        // Initialize Cards
         vocab.forEach((item, i) => {
             const el = document.createElement('div');
             el.className = 'card-stack';
@@ -196,12 +197,11 @@
                 cards[currentIdx].style.transform = `translateX(${moveX}%)`;
             } else if (dragAxis === 'v') {
                 const h = cards[currentIdx].dataset.hPos;
-                // Move current card up
                 if (deltaY < 0 && currentIdx < cards.length - 1) {
+                    // Moving current card UP
                     cards[currentIdx].style.transform = `translateX(${h}%) translateY(${deltaY}px)`;
-                } 
-                // Pull previous card down
-                else if (deltaY > 0 && currentIdx > 0) {
+                } else if (deltaY > 0 && currentIdx > 0) {
+                    // Pulling previous card DOWN
                     const prev = cards[currentIdx-1];
                     prev.style.transform = `translateX(${prev.dataset.hPos}%) translateY(${-window.innerHeight + deltaY}px)`;
                 }
@@ -219,18 +219,17 @@
                 else if (deltaX > 50) { card.style.transform = 'translateX(0%)'; card.dataset.hPos = 0; }
                 else card.style.transform = `translateX(${card.dataset.hPos}%)`;
             } else if (dragAxis === 'v') {
-                const threshold = 100; // Drag distance needed to trigger a switch
-
+                const threshold = 100;
                 if (deltaY < -threshold && currentIdx < cards.length - 1) {
-                    // Successful Scroll Up -> Next Card
+                    // Confirm Swipe Up
                     card.style.transform = `translateX(${card.dataset.hPos}%) translateY(-100%)`;
                     currentIdx++;
                 } else if (deltaY > threshold && currentIdx > 0) {
-                    // Successful Scroll Down -> Previous Card
+                    // Confirm Swipe Down
                     currentIdx--;
                     cards[currentIdx].style.transform = `translateX(${cards[currentIdx].dataset.hPos}%) translateY(0%)`;
                 } else {
-                    // Reset positions if drag wasn't far enough
+                    // Reset positions
                     card.style.transform = `translateX(${card.dataset.hPos}%) translateY(0%)`;
                     if (currentIdx > 0) {
                         cards[currentIdx-1].style.transform = `translateX(${cards[currentIdx-1].dataset.hPos}%) translateY(-100%)`;
@@ -241,6 +240,7 @@
             deltaX = 0; deltaY = 0;
         }
 
+        // Event Listeners
         window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
         window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
         window.addEventListener('mouseup', handleEnd);
