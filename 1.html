@@ -1,9 +1,13 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vocabulary Reels</title>
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<title>Vocabulary Reels V2</title>
 
 <style>
 
@@ -11,14 +15,16 @@
 margin:0;
 padding:0;
 box-sizing:border-box;
-font-family:sans-serif;
+font-family:system-ui;
 }
 
-body{
+html,body{
+height:100%;
+width:100%;
 background:#121212;
-overflow:hidden;
 color:white;
-height:100vh;
+overflow:hidden;
+touch-action:none;
 }
 
 #app{
@@ -28,41 +34,47 @@ position:relative;
 overflow:hidden;
 }
 
+/* CARD */
+
 .card{
 position:absolute;
 width:100%;
 height:100%;
 display:flex;
-align-items:center;
 justify-content:center;
-flex-direction:column;
-font-weight:600;
+align-items:center;
 transition:transform .45s cubic-bezier(.22,.61,.36,1);
-}
-
-.word{
-font-size:clamp(40px,8vw,80px);
-}
-
-.meaning{
-font-size:clamp(22px,5vw,40px);
-opacity:.9;
+will-change:transform;
 }
 
 .card-inner{
-display:flex;
 width:200%;
+display:flex;
 height:100%;
-transition:transform .4s cubic-bezier(.22,.61,.36,1);
+transition:transform .35s cubic-bezier(.22,.61,.36,1);
 }
 
 .side{
 width:100%;
 display:flex;
-align-items:center;
-justify-content:center;
 flex-direction:column;
+justify-content:center;
+align-items:center;
+padding:20px;
+text-align:center;
 }
+
+.word{
+font-size:clamp(42px,9vw,78px);
+font-weight:700;
+}
+
+.meaning{
+font-size:clamp(26px,6vw,42px);
+opacity:.9;
+}
+
+/* PROGRESS */
 
 .progress{
 position:absolute;
@@ -72,8 +84,8 @@ transform:translateX(-50%);
 width:70px;
 height:70px;
 border-radius:50%;
-backdrop-filter:blur(10px);
-background:rgba(255,255,255,.05);
+background:rgba(255,255,255,.08);
+backdrop-filter:blur(12px);
 display:flex;
 align-items:center;
 justify-content:center;
@@ -81,13 +93,24 @@ transition:.4s;
 }
 
 .progress.completed{
-width:180px;
+width:200px;
 border-radius:20px;
-background:cyan;
+background:#00ffff;
 }
 
 .progress span{
-font-size:18px;
+font-weight:700;
+font-size:20px;
+}
+
+.progress.completed span{
+opacity:0;
+}
+
+.progress.completed::after{
+content:"COMPLETED";
+font-weight:800;
+color:black;
 }
 
 .progress svg{
@@ -99,31 +122,24 @@ transform:rotate(-90deg);
 
 .progress circle{
 fill:none;
-stroke:cyan;
+stroke:#00ffff;
 stroke-width:5;
 stroke-dasharray:200;
 stroke-dashoffset:200;
 transition:.3s;
 }
 
-.completed span{
-opacity:0;
-}
-
-.completed::after{
-content:"COMPLETED";
-font-weight:700;
-color:black;
-}
+/* CONFETTI */
 
 canvas{
 position:fixed;
-pointer-events:none;
 top:0;
 left:0;
+pointer-events:none;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -141,46 +157,48 @@ left:0;
 
 <script>
 
-const vocab=[
+/* VOCAB DATA */
+
+const words=[
 {en:"Admonish",bn:"ধমক দেওয়া"},
 {en:"Aesthetic",bn:"নান্দনিক"},
 {en:"Affectation",bn:"কৃত্রিম আচরণ"},
 {en:"Benevolent",bn:"দয়ালু"},
-{en:"Candid",bn:"সৎ"}
+{en:"Candid",bn:"সৎ"},
+{en:"Diligent",bn:"পরিশ্রমী"}
 ]
 
 const app=document.getElementById("app")
-const circle=document.querySelector("circle")
-const counter=document.getElementById("counter")
 const progress=document.getElementById("progress")
+const counter=document.getElementById("counter")
+const circle=document.querySelector("circle")
 
 let index=0
-let startX=0
-let startY=0
+let startX,startY
+let axis=null
 let dragging=false
-let direction=null
 
 function createCards(){
 
-vocab.forEach((v,i)=>{
+words.forEach((w,i)=>{
 
-let card=document.createElement("div")
+const card=document.createElement("div")
 card.className="card"
-card.style.zIndex=vocab.length-i
+card.style.zIndex=words.length-i
 
-let inner=document.createElement("div")
+const inner=document.createElement("div")
 inner.className="card-inner"
 
-let front=document.createElement("div")
-front.className="side"
-front.innerHTML=`<div class="word">${v.en}</div>`
+inner.innerHTML=`
+<div class="side">
+<div class="word">${w.en}</div>
+</div>
 
-let back=document.createElement("div")
-back.className="side"
-back.innerHTML=`<div class="meaning">${v.bn}</div>`
+<div class="side">
+<div class="meaning">${w.bn}</div>
+</div>
+`
 
-inner.appendChild(front)
-inner.appendChild(back)
 card.appendChild(inner)
 
 if(i>0) card.style.transform="translateY(100%)"
@@ -193,43 +211,54 @@ app.appendChild(card)
 
 createCards()
 
-const cards=[...document.querySelectorAll(".card")]
+function cards(){
+return [...document.querySelectorAll(".card")]
+}
+
+/* PROGRESS */
 
 function updateProgress(){
 
 counter.textContent=index+1
 
-let percent=(index+1)/vocab.length
+let percent=(index+1)/words.length
+
 circle.style.strokeDashoffset=200-(200*percent)
 
-if(index===vocab.length-1){
+if(index===words.length-1){
+
 progress.classList.add("completed")
 launchConfetti()
+
 }
 
 }
 
 updateProgress()
 
+/* RESET */
+
 function resetHorizontal(){
 
-cards.forEach(card=>{
-card.querySelector(".card-inner").style.transform="translateX(0%)"
+cards().forEach(c=>{
+c.querySelector(".card-inner").style.transform="translateX(0)"
 })
 
 }
 
+/* NAVIGATION */
+
 function next(){
 
-if(index>=vocab.length-1)return
+if(index>=words.length-1)return
 
-cards[index].style.transform="translateY(-100%)"
+cards()[index].style.transform="translateY(-100%)"
 
 index++
 
 resetHorizontal()
 
-cards[index].style.transform="translateY(0%)"
+cards()[index].style.transform="translateY(0)"
 
 updateProgress()
 
@@ -239,24 +268,26 @@ function prev(){
 
 if(index<=0)return
 
-cards[index].style.transform="translateY(100%)"
+cards()[index].style.transform="translateY(100%)"
 
 index--
 
 resetHorizontal()
 
-cards[index].style.transform="translateY(0%)"
+cards()[index].style.transform="translateY(0)"
 
 }
+
+/* TOUCH */
 
 app.addEventListener("touchstart",e=>{
 
 dragging=true
 startX=e.touches[0].clientX
 startY=e.touches[0].clientY
-direction=null
+axis=null
 
-})
+},{passive:false})
 
 app.addEventListener("touchmove",e=>{
 
@@ -265,25 +296,26 @@ if(!dragging)return
 let dx=e.touches[0].clientX-startX
 let dy=e.touches[0].clientY-startY
 
-if(!direction){
-direction=Math.abs(dx)>Math.abs(dy)?"h":"v"
+if(!axis){
+axis=Math.abs(dx)>Math.abs(dy)?"h":"v"
 }
 
-if(direction==="h"){
+if(axis==="h"){
 
-cards[index].querySelector(".card-inner")
+cards()[index]
+.querySelector(".card-inner")
 .style.transform=`translateX(${dx}px)`
 
 }
 
-if(direction==="v"){
+if(axis==="v"){
 
-cards[index].style.transition="none"
-cards[index].style.transform=`translateY(${dy}px)`
+cards()[index].style.transition="none"
+cards()[index].style.transform=`translateY(${dy}px)`
 
 }
 
-})
+},{passive:false})
 
 app.addEventListener("touchend",e=>{
 
@@ -292,29 +324,41 @@ dragging=false
 let dx=e.changedTouches[0].clientX-startX
 let dy=e.changedTouches[0].clientY-startY
 
-cards[index].style.transition=".4s cubic-bezier(.22,.61,.36,1)"
+cards()[index].style.transition=".4s cubic-bezier(.22,.61,.36,1)"
 
-if(direction==="h"){
+if(axis==="h"){
 
-if(dx<-80){
-cards[index].querySelector(".card-inner")
-.style.transform="translateX(-50%)"
-}else{
-cards[index].querySelector(".card-inner")
-.style.transform="translateX(0%)"
-}
+if(dx<-80)
+cards()[index].querySelector(".card-inner").style.transform="translateX(-50%)"
+else
+cards()[index].querySelector(".card-inner").style.transform="translateX(0)"
 
 }
 
-if(direction==="v"){
+if(axis==="v"){
 
 if(dy<-80) next()
 else if(dy>80) prev()
-else cards[index].style.transform="translateY(0)"
+else cards()[index].style.transform="translateY(0)"
 
 }
 
 })
+
+/* TAP REVEAL */
+
+app.addEventListener("click",()=>{
+
+let inner=cards()[index].querySelector(".card-inner")
+
+if(inner.style.transform==="translateX(-50%)")
+inner.style.transform="translateX(0)"
+else
+inner.style.transform="translateX(-50%)"
+
+})
+
+/* DESKTOP SCROLL */
 
 app.addEventListener("wheel",e=>{
 
@@ -323,27 +367,27 @@ else prev()
 
 })
 
-/* confetti */
+/* CONFETTI */
 
 const canvas=document.getElementById("confetti")
 const ctx=canvas.getContext("2d")
 
-canvas.width=innerWidth
-canvas.height=innerHeight
+canvas.width=window.innerWidth
+canvas.height=window.innerHeight
 
 let confetti=[]
 
 function launchConfetti(){
 
-for(let i=0;i<150;i++){
+for(let i=0;i<160;i++){
 
 confetti.push({
 
 x:Math.random()*canvas.width,
 y:-20,
-size:5+Math.random()*5,
-speed:2+Math.random()*3,
-angle:Math.random()*Math.PI*2
+size:6+Math.random()*6,
+speed:2+Math.random()*4,
+angle:Math.random()*Math.PI
 
 })
 
