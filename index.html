@@ -225,67 +225,84 @@
 
     // Handle pointer gestures on the current card
     function attachPointerHandlers(card){
-      let startY = 0; let currentY = 0; let dragging = false; let startTime = 0; let moved = false;
+      let startY=0,lastY=0,lastTime=0,velocity=0,dragging=false;
 
-      function setTransforms(dy){
-        // Move the current card with the finger, and peek the next/prev accordingly
-        card.style.transition = 'none';
-        card.style.transform = `translate(-50%, calc(-50% + ${dy}px))`;
-        card.style.opacity = 1 - Math.min(Math.abs(dy) / 600, 0.35);
-
-        if(dy < 0 && nodes.next){ // dragging up -> show next card coming up from bottom
-          nodes.next.style.transition = 'none';
-          nodes.next.style.transform = `translate(-50%, calc(150% + ${dy}px))`;
-          nodes.next.style.opacity = Math.min(Math.abs(dy) / 200, 1);
+      function setTransform(dy){
+        card.style.transition='none';
+        card.style.transform=`translate(-50%, calc(-50% + ${dy}px))`;
+        if(nodes.next && dy<0){
+          nodes.next.style.transition='none';
+          nodes.next.style.transform=`translate(-50%, calc(150% + ${dy}px))`;
+          nodes.next.style.opacity=Math.min(Math.abs(dy)/200,1);
         }
-        if(dy > 0 && nodes.prev){ // dragging down -> show prev coming down
-          nodes.prev.style.transition = 'none';
-          nodes.prev.style.transform = `translate(-50%, calc(-150% + ${dy}px))`;
-          nodes.prev.style.opacity = Math.min(Math.abs(dy) / 200, 1);
+        if(nodes.prev && dy>0){
+          nodes.prev.style.transition='none';
+          nodes.prev.style.transform=`translate(-50%, calc(-150% + ${dy}px))`;
+          nodes.prev.style.opacity=Math.min(Math.abs(dy)/200,1);
         }
       }
 
-      function resetPositions(){
-        [card, nodes.next, nodes.prev].forEach(n=>{ if(!n) return; n.style.transition='transform 260ms cubic-bezier(.22,.9,.28,1), opacity 200ms ease'; n.style.transform = n.classList.contains('next') ? 'translate(-50%,150%)' : (n.classList.contains('prev') ? 'translate(-50%,-150%)' : 'translate(-50%,-50%)'); n.style.opacity = n.classList.contains('next') || n.classList.contains('prev') ? 0 : 1; });
+      function onDown(e){
+        if(isAnimating) return;
+        dragging=true;
+        startY=e.clientY;
+        lastY=startY;
+        lastTime=performance.now();
+        velocity=0;
+        card.classList.remove('revealed');
       }
 
-      function onPointerDown(e){ if(isAnimating) return; dragging=true; moved=false; startY = e.clientY; currentY = startY; startTime = Date.now(); card.classList.remove('revealed');
-        // ensure nodes next/prev have initial transform values
-        if(nodes.next) { nodes.next.style.transition='none'; nodes.next.style.transform='translate(-50%,150%)'; nodes.next.style.opacity=0 }
-        if(nodes.prev) { nodes.prev.style.transition='none'; nodes.prev.style.transform='translate(-50%,-150%)'; nodes.prev.style.opacity=0 }
+      function onMove(e){
+        if(!dragging) return;
+        const y=e.clientY;
+        const now=performance.now();
+        const dy=y-startY;
+
+        velocity=(y-lastY)/(now-lastTime);
+        lastY=y;
+        lastTime=now;
+
+        setTransform(dy);
       }
 
-      function onPointerMove(e){ if(!dragging) return; const y = e.clientY; const dy = y - startY; currentY = y; if(Math.abs(dy) > 6) moved = true; setTransforms(dy); }
+      function onUp(e){
+        if(!dragging) return;
+        dragging=false;
+        const dy=e.clientY-startY;
 
-      function onPointerUp(e){ if(!dragging) return; dragging=false; const dy = currentY - startY; const dt = Date.now() - startTime;
-        // Tap detection: short press, minimal movement
-        if(!moved && dt < 250){ // treat as tap
-          card.classList.toggle('revealed'); card.style.transition='transform 200ms ease'; card.style.transform='translate(-50%,-50%)'; return;
-        }
+        const momentum=velocity*220; // physics feel
+        const total=dy+momentum;
 
-        // Swipe threshold
-        if(dy < -80){ // swipe up -> next
+        if(total<-100){
           toNext();
-        } else if(dy > 80){ // swipe down -> prev
+        }else if(total>100){
           toPrev();
-        } else {
-          // not far enough, snap back
-          resetPositions();
+        }else if(Math.abs(dy)<10){
+          card.classList.toggle('revealed');
+          card.style.transform='translate(-50%,-50%)';
+        }else{
+          // snap back
+          [card,nodes.next,nodes.prev].forEach(n=>{
+            if(!n) return;
+            n.style.transition='transform 260ms cubic-bezier(.22,.9,.28,1), opacity 200ms';
+          });
+          card.style.transform='translate(-50%,-50%)';
+          if(nodes.next){nodes.next.style.transform='translate(-50%,150%)';nodes.next.style.opacity=0}
+          if(nodes.prev){nodes.prev.style.transform='translate(-50%,-150%)';nodes.prev.style.opacity=0}
         }
       }
 
-      // Use pointer events for unified touch/mouse support
-      card.addEventListener('pointerdown', onPointerDown);
-      window.addEventListener('pointermove', onPointerMove);
-      window.addEventListener('pointerup', onPointerUp);
+      card.addEventListener('pointerdown',onDown);
+      window.addEventListener('pointermove',onMove);
+      window.addEventListener('pointerup',onUp);
 
-      // Also support keyboard and buttons
-      document.getElementById('nextBtn').onclick = ()=> toNext();
-      document.getElementById('prevBtn').onclick = ()=> toPrev();
-      window.addEventListener('keydown', (ev)=>{
-        if(ev.key === 'ArrowUp') { toNext(); }
-        if(ev.key === 'ArrowDown') { toPrev(); }
-        if(ev.key === ' ' || ev.key === 'Enter') { card.classList.toggle('revealed'); }
+      document.getElementById('nextBtn').onclick=()=>toNext();
+      document.getElementById('prevBtn').onclick=()=>toPrev();
+
+      window.addEventListener('keydown',(ev)=>{
+        if(ev.key==='ArrowUp') toNext();
+        if(ev.key==='ArrowDown') toPrev();
+        if(ev.key===' '||ev.key==='Enter') card.classList.toggle('revealed');
       });
     }
 
