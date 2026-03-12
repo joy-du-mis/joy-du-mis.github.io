@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocab Reels with Confetti</title>
+    <title>Vocab Reels - Ultimate Edition</title>
     <style>
         :root {
             --word-bg: #121212;
@@ -23,7 +23,6 @@
             touch-action: none;
         }
 
-        /* Fixed Header Area to anchor the Progress Panel */
         #header {
             position: absolute;
             top: 0;
@@ -64,7 +63,6 @@
         .progress-ring__circle { transition: stroke-dashoffset 0.4s ease; transform: rotate(-90deg); transform-origin: 50% 50%; stroke: var(--accent); }
         #progress-panel.completed .progress-ring { opacity: 0; }
 
-        /* Card Setup */
         #viewport { width: 100%; height: 100%; position: relative; }
         .card-stack { position: absolute; width: 100%; height: 100%; will-change: transform; display: flex; transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1); }
         .page { min-width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 40px; }
@@ -75,16 +73,7 @@
 
         .hint { position: absolute; bottom: 25px; width: 100%; text-align: center; font-size: 0.7rem; opacity: 0.25; z-index: 1000; }
 
-        /* Confetti Canvas */
-        #confetti-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1002; /* On top of everything */
-        }
+        #confetti-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1002; }
     </style>
 </head>
 <body>
@@ -106,6 +95,7 @@
 
     <script>
         const vocab = [
+            { en: "Meticulous", bn: "অতি সতর্ক" },
             { en: "Infallible", bn: "নির্ভুল" },
             { en: "Euphoria", bn: "উচ্ছ্বাস" },
             { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
@@ -117,9 +107,9 @@
         const circle = document.getElementById('progress-circle');
         const panel = document.getElementById('progress-panel');
         const counter = document.getElementById('counter-text');
-        
         const radius = circle.r.baseVal.value;
         const circumference = radius * 2 * Math.PI;
+        
         circle.style.strokeDasharray = `${circumference} ${circumference}`;
 
         let currentIdx = 0;
@@ -145,7 +135,6 @@
             cards[index].dataset.hPos = 0;
         }
 
-        // Initialize Cards
         vocab.forEach((item, i) => {
             const el = document.createElement('div');
             el.className = 'card-stack';
@@ -159,77 +148,120 @@
             cards.push(el);
         });
 
-        // Event Handling and Drag Logic (Remains unchanged for stabilization and bug fix)
-        // ... (mousedown, mousemove, mouseup, touchstart, touchmove, touchend listeners) ...
+        function handleStart(x, y) {
+            isDragging = true; startX = x; startY = y; dragAxis = null;
+            cards.forEach(c => c.style.transition = 'none');
+        }
 
-        // Confetti Engine
+        function handleMove(x, y) {
+            if (!isDragging) return;
+            deltaX = x - startX; deltaY = y - startY;
+
+            if (!dragAxis) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) dragAxis = 'h';
+                else if (Math.abs(deltaY) > 5) dragAxis = 'v';
+            }
+
+            if (dragAxis === 'h') {
+                const currentH = parseInt(cards[currentIdx].dataset.hPos);
+                let moveX = currentH + (deltaX / window.innerWidth * 100);
+                moveX = Math.min(0, Math.max(-100, moveX));
+                cards[currentIdx].style.transform = `translateX(${moveX}%)`;
+            } else if (dragAxis === 'v') {
+                if (deltaY < 0) forceEnglish(currentIdx);
+                if (deltaY > 0) forceEnglish(currentIdx - 1);
+
+                if (deltaY < 0 && currentIdx < cards.length - 1) {
+                    cards[currentIdx].style.transform = `translateX(0%) translateY(${deltaY}px)`;
+                } else if (deltaY > 0 && currentIdx > 0) {
+                    const prev = cards[currentIdx-1];
+                    prev.style.transform = `translateX(0%) translateY(${-window.innerHeight + deltaY}px)`;
+                }
+            }
+        }
+
+        function handleEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            const card = cards[currentIdx];
+            cards.forEach(c => c.style.transition = 'all 0.5s cubic-bezier(0.2, 1, 0.3, 1)');
+
+            if (dragAxis === 'h') {
+                if (deltaX < -50) { card.style.transform = 'translateX(-100%)'; card.dataset.hPos = -100; }
+                else if (deltaX > 50) { card.style.transform = 'translateX(0%)'; card.dataset.hPos = 0; }
+                else card.style.transform = `translateX(${card.dataset.hPos}%)`;
+            } else if (dragAxis === 'v') {
+                if (deltaY < -100 && currentIdx < cards.length - 1) {
+                    card.style.transform = `translateX(0%) translateY(-100%)`;
+                    currentIdx++;
+                } else if (deltaY > 100 && currentIdx > 0) {
+                    currentIdx--;
+                    cards[currentIdx].style.transform = `translateX(0%) translateY(0%)`;
+                } else {
+                    card.style.transform = `translateX(${card.dataset.hPos}%) translateY(0%)`;
+                    if (currentIdx > 0) cards[currentIdx-1].style.transform = `translateX(0%) translateY(-100%)`;
+                }
+                updateProgressUI();
+            }
+            deltaX = 0; deltaY = 0;
+        }
+
+        // Event Bindings
+        window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+        window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+        window.addEventListener('mouseup', handleEnd);
+        window.addEventListener('touchstart', e => handleStart(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientX, e.touches[0].clientY));
+        window.addEventListener('touchend', handleEnd);
+
+        // Confetti Logic
         const confettiCanvas = document.getElementById('confetti-canvas');
-        const confettiCtx = confettiCanvas.getContext('2d');
-        let confettis = [];
-        const confettiCount = 300;
-        const gravity = 0.5;
-        const terminalVelocity = 5;
-        const drag = 0.075;
+        const ctx = confettiCanvas.getContext('2d');
+        let pieces = [];
         const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b'];
 
         function triggerConfetti() {
-            initConfetti();
-            requestAnimationFrame(animateConfetti);
-        }
-
-        class Confetti {
-            constructor() {
-                this.x = Math.random() * confettiCanvas.width;
-                this.y = Math.random() * confettiCanvas.height - confettiCanvas.height;
-                this.r = Math.random() * 6 + 4;
-                this.d = Math.random() * confettiCount;
-                this.color = colors[Math.floor(Math.random() * colors.length)];
-                this.tilt = Math.random() * 10 - 10;
-                this.tiltAngleIncremental = Math.random() * 0.07 + 0.05;
-                this.tiltAngle = 0;
+            pieces = [];
+            for (let i = 0; i < 150; i++) {
+                pieces.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                    r: Math.random() * 6 + 4,
+                    d: Math.random() * 150,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.random() * 10 - 10,
+                    tiltAngleIncremental: Math.random() * 0.07 + 0.05,
+                    tiltAngle: 0
+                });
             }
-        }
-
-        function initConfetti() {
-            confettis = [];
-            for (let i = 0; i < confettiCount; i++) {
-                confettis.push(new Confetti());
-            }
+            animateConfetti();
         }
 
         function animateConfetti() {
-            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-            confettis.forEach((confetti, index) => {
-                confetti.tiltAngle += confetti.tiltAngleIncremental;
-                confetti.y += (Math.cos(confetti.d) + 3 + confetti.r / 2) / 2;
-                confetti.tilt = Math.sin(confetti.tiltAngle - index / 3) * 15;
-
-                if (confetti.y > confettiCanvas.height) {
-                    confettis.splice(index, 1);
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            pieces.forEach((p, i) => {
+                p.tiltAngle += p.tiltAngleIncremental;
+                p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+                p.tilt = Math.sin(p.tiltAngle) * 15;
+                if (p.y <= confettiCanvas.height) {
+                    ctx.beginPath();
+                    ctx.lineWidth = p.r / 2;
+                    ctx.strokeStyle = p.color;
+                    ctx.moveTo(p.x + p.tilt + p.r / 4, p.y);
+                    ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 4);
+                    ctx.stroke();
                 }
-
-                confettiCtx.beginPath();
-                confettiCtx.lineWidth = confetti.r / 2;
-                confettiCtx.strokeStyle = confetti.color;
-                confettiCtx.moveTo(confetti.x + confetti.tilt + confetti.r / 4, confetti.y);
-                confettiCtx.lineTo(confetti.x + confetti.tilt, confetti.y + confetti.tilt + confetti.r / 4);
-                confettiCtx.stroke();
             });
-
-            if (confettis.length > 0) {
-                requestAnimationFrame(animateConfetti);
-            } else {
-                confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-            }
+            if (pieces.some(p => p.y <= confettiCanvas.height)) requestAnimationFrame(animateConfetti);
         }
 
-        function resizeConfettiCanvas() {
+        window.addEventListener('resize', () => {
             confettiCanvas.width = window.innerWidth;
             confettiCanvas.height = window.innerHeight;
-        }
-
-        window.addEventListener('resize', resizeConfettiCanvas);
-        resizeConfettiCanvas();
+        });
+        
+        confettiCanvas.width = window.innerWidth;
+        confettiCanvas.height = window.innerHeight;
         updateProgressUI();
     </script>
 </body>
