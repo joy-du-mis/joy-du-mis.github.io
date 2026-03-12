@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocab Reels - Bug Fixed</title>
+    <title>Vocab Reels - Final Fix</title>
     <style>
         :root {
             --word-bg: #121212;
@@ -80,11 +80,6 @@
         .meaning-page { background: var(--meaning-bg); }
         .text { font-size: 3rem; font-weight: 900; }
         .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 10px; }
-
-        .hint {
-            position: absolute; bottom: 20px; width: 100%;
-            text-align: center; font-size: 0.7rem; opacity: 0.3; z-index: 1000;
-        }
     </style>
 </head>
 <body>
@@ -99,7 +94,6 @@
     </div>
 
     <div id="viewport"></div>
-    <div class="hint">Swipe L/R for Meaning • Swipe U/D for Word</div>
 
     <script>
         const vocab = [
@@ -133,13 +127,12 @@
             else panel.classList.remove('completed');
         }
 
-        // RESET FUNCTION: Forces card back to English side
-        function resetCardHorizontal(index) {
+        // Force a card to reset to English (Horizontal pos 0)
+        function forceEnglish(index) {
             if (index < 0 || index >= cards.length) return;
-            const card = cards[index];
-            card.dataset.hPos = 0;
-            // Apply immediately or let the transition handle it
-            card.style.transform = card.style.transform.replace(/translateX\(-?\d+%\)/, 'translateX(0%)');
+            cards[index].dataset.hPos = 0;
+            // We don't change the style here to avoid interrupting the drag, 
+            // the transform update in handleMove/handleEnd will pick this up.
         }
 
         vocab.forEach((item, i) => {
@@ -175,13 +168,16 @@
                 moveX = Math.min(0, Math.max(-100, moveX));
                 cards[currentIdx].style.transform = `translateX(${moveX}%)`;
             } else if (dragAxis === 'v') {
-                const h = cards[currentIdx].dataset.hPos;
+                // BUG FIX: Whenever vertical movement starts, reset the neighbor cards to English
+                if (deltaY < 0) forceEnglish(currentIdx); // Reset current as it moves up
+                if (deltaY > 0) forceEnglish(currentIdx - 1); // Reset previous as it moves down
+
                 if (deltaY < 0 && currentIdx < cards.length - 1) {
-                    cards[currentIdx].style.transform = `translateX(${h}%) translateY(${deltaY}px)`;
+                    cards[currentIdx].style.transform = `translateX(0%) translateY(${deltaY}px)`;
                 } else if (deltaY > 0 && currentIdx > 0) {
                     const prev = cards[currentIdx-1];
-                    const prevH = prev.dataset.hPos;
-                    prev.style.transform = `translateX(${prevH}%) translateY(${-window.innerHeight + deltaY}px)`;
+                    // Notice we use translateX(0%) now instead of prev.dataset.hPos
+                    prev.style.transform = `translateX(0%) translateY(${-window.innerHeight + deltaY}px)`;
                 }
             }
         }
@@ -198,44 +194,23 @@
                 else card.style.transform = `translateX(${card.dataset.hPos}%)`;
             } else if (dragAxis === 'v') {
                 if (deltaY < -100 && currentIdx < cards.length - 1) {
-                    // Moving NEXT: Reset the current card to English as it leaves
-                    resetCardHorizontal(currentIdx);
-                    cards[currentIdx].style.transform = `translateX(0%) translateY(-100%)`;
+                    card.style.transform = `translateX(0%) translateY(-100%)`;
                     currentIdx++;
                 } else if (deltaY > 100 && currentIdx > 0) {
-                    // Moving PREVIOUS: Ensure the incoming card is on English side
                     currentIdx--;
-                    resetCardHorizontal(currentIdx);
                     cards[currentIdx].style.transform = `translateX(0%) translateY(0%)`;
                 } else {
-                    // Bounce back current
+                    // Reset current card if drag wasn't far enough
                     card.style.transform = `translateX(${card.dataset.hPos}%) translateY(0%)`;
-                    // Bounce back previous if it was being pulled
+                    // Reset previous card if drag wasn't far enough
                     if (currentIdx > 0) {
-                        const prev = cards[currentIdx-1];
-                        prev.style.transform = `translateX(${prev.dataset.hPos}%) translateY(-100%)`;
+                        cards[currentIdx-1].style.transform = `translateX(0%) translateY(-100%)`;
                     }
                 }
                 updateProgressUI();
             }
             deltaX = 0; deltaY = 0;
         }
-
-        // Wheel Support with Bug Fix
-        window.addEventListener('wheel', e => {
-            if (isDragging) return;
-            if (e.deltaY > 50 && currentIdx < cards.length - 1) {
-                resetCardHorizontal(currentIdx);
-                cards[currentIdx].style.transform = `translateX(0%) translateY(-100%)`;
-                currentIdx++;
-                updateProgressUI();
-            } else if (e.deltaY < -50 && currentIdx > 0) {
-                currentIdx--;
-                resetCardHorizontal(currentIdx);
-                cards[currentIdx].style.transform = `translateX(0%) translateY(0%)`;
-                updateProgressUI();
-            }
-        });
 
         window.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
         window.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
