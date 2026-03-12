@@ -23,10 +23,10 @@
             touch-action: none;
         }
 
-        /* Progress Container - Moved to Bottom */
+        /* Progress Container - At the Bottom */
         #progress-panel {
             position: absolute;
-            bottom: 30px; /* Changed from top: 20px */
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1001;
@@ -41,7 +41,7 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); /* Added shadow for better visibility on bottom */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
 
         #progress-panel.completed {
@@ -196,9 +196,12 @@
                 cards[currentIdx].style.transform = `translateX(${moveX}%)`;
             } else if (dragAxis === 'v') {
                 const h = cards[currentIdx].dataset.hPos;
+                // Move current card up
                 if (deltaY < 0 && currentIdx < cards.length - 1) {
                     cards[currentIdx].style.transform = `translateX(${h}%) translateY(${deltaY}px)`;
-                } else if (deltaY > 0 && currentIdx > 0) {
+                } 
+                // Pull previous card down
+                else if (deltaY > 0 && currentIdx > 0) {
                     const prev = cards[currentIdx-1];
                     prev.style.transform = `translateX(${prev.dataset.hPos}%) translateY(${-window.innerHeight + deltaY}px)`;
                 }
@@ -216,15 +219,22 @@
                 else if (deltaX > 50) { card.style.transform = 'translateX(0%)'; card.dataset.hPos = 0; }
                 else card.style.transform = `translateX(${card.dataset.hPos}%)`;
             } else if (dragAxis === 'v') {
-                if (deltaY < -100 && currentIdx < cards.length - 1) {
+                const threshold = 100; // Drag distance needed to trigger a switch
+
+                if (deltaY < -threshold && currentIdx < cards.length - 1) {
+                    // Successful Scroll Up -> Next Card
                     card.style.transform = `translateX(${card.dataset.hPos}%) translateY(-100%)`;
                     currentIdx++;
-                } else if (deltaY > 100 && currentIdx > 0) {
+                } else if (deltaY > threshold && currentIdx > 0) {
+                    // Successful Scroll Down -> Previous Card
                     currentIdx--;
                     cards[currentIdx].style.transform = `translateX(${cards[currentIdx].dataset.hPos}%) translateY(0%)`;
                 } else {
+                    // Reset positions if drag wasn't far enough
                     card.style.transform = `translateX(${card.dataset.hPos}%) translateY(0%)`;
-                    if (currentIdx > 0) cards[currentIdx-1].style.transform = `translateX(${cards[currentIdx-1].dataset.hPos}%) translateY(-100%)`;
+                    if (currentIdx > 0) {
+                        cards[currentIdx-1].style.transform = `translateX(${cards[currentIdx-1].dataset.hPos}%) translateY(-100%)`;
+                    }
                 }
                 updateProgressUI();
             }
