@@ -1,1 +1,234 @@
-hi
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocab Reels</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #121212;
+            --accent: #00f2ea; /* Insta-style cyan */
+            --text-main: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            touch-action: none;
+        }
+
+        #app-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100%;
+            position: relative;
+            background: var(--bg-color);
+        }
+
+        /* Progress Bar Container */
+        #progress-container {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            padding: 0 10px;
+            gap: 4px;
+            z-index: 10;
+        }
+
+        .bar {
+            height: 2px;
+            flex: 1;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bar-inner {
+            height: 100%;
+            width: 0%;
+            background: var(--text-main);
+            transition: width 0.3s;
+        }
+
+        /* Card System */
+        #stage {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .card {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+            background: var(--card-bg);
+            transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s;
+        }
+
+        .english {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 15px;
+        }
+
+        .bangla {
+            font-size: 2rem;
+            color: var(--accent);
+            font-weight: 500;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .hidden {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        /* Card Positioning States */
+        .active { z-index: 2; transform: translateY(0) scale(1); opacity: 1; }
+        .below { z-index: 3; transform: translateY(100%); }
+        .above { z-index: 3; transform: translateY(-100%); }
+        .exit-up { transform: translateY(-20%) scale(0.9); opacity: 0.4; z-index: 1; }
+        .exit-down { transform: translateY(20%) scale(0.9); opacity: 0.4; z-index: 1; }
+
+        /* Instructions Overlay */
+        #hint {
+            position: absolute;
+            bottom: 30px;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            width: 100%;
+            text-align: center;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <div id="progress-container"></div>
+        
+        <div id="stage">
+            <div id="card-1" class="card active">
+                <h1 class="english">Start</h1>
+                <h2 class="bangla hidden">শুরু করুন</h2>
+            </div>
+            <div id="card-2" class="card below">
+                <h1 class="english"></h1>
+                <h2 class="bangla hidden"></h2>
+            </div>
+        </div>
+
+        <div id="hint">Tap to see meaning • Swipe up for next</div>
+    </div>
+
+    <script>
+        const vocabulary = [
+            { en: "Enthusiastic", bn: "উত্সাহী" },
+            { en: "Magnificent", bn: "চমৎকার" },
+            { en: "Obscure", bn: "অস্পষ্ট" },
+            { en: "Spontaneous", bn: "স্বতঃস্ফূর্ত" },
+            { en: "Versatile", bn: "বহুমুখী" }
+        ];
+
+        let currentIndex = 0;
+        let startY = 0;
+        let isAnimating = false;
+
+        const stage = document.getElementById('stage');
+        const progressContainer = document.getElementById('progress-container');
+        let cardA = document.getElementById('card-1');
+        let cardB = document.getElementById('card-2');
+
+        // Create Progress Bars
+        vocabulary.forEach((_, i) => {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.innerHTML = `<div class="bar-inner" id="bar-${i}"></div>`;
+            progressContainer.appendChild(bar);
+        });
+
+        function updateProgress() {
+            vocabulary.forEach((_, i) => {
+                const inner = document.getElementById(`bar-${i}`);
+                inner.style.width = i <= currentIndex ? '100%' : '0%';
+            });
+        }
+
+        function setCardData(card, index) {
+            card.querySelector('.english').textContent = vocabulary[index].en;
+            card.querySelector('.bangla').textContent = vocabulary[index].bn;
+            card.querySelector('.bangla').classList.add('hidden');
+        }
+
+        function swipe(direction) {
+            if (isAnimating) return;
+            
+            const isNext = direction === 'up';
+            const newIndex = isNext ? currentIndex + 1 : currentIndex - 1;
+
+            if (newIndex < 0 || newIndex >= vocabulary.length) return;
+
+            isAnimating = true;
+            const activeCard = cardA.classList.contains('active') ? cardA : cardB;
+            const idleCard = activeCard === cardA ? cardB : cardA;
+
+            // Prepare idle card
+            idleCard.style.transition = 'none';
+            idleCard.classList.remove('active', 'below', 'above', 'exit-up', 'exit-down');
+            idleCard.classList.add(isNext ? 'below' : 'above');
+            setCardData(idleCard, newIndex);
+
+            // Force reflow
+            idleCard.offsetHeight;
+
+            // Start Animation
+            idleCard.style.transition = '';
+            idleCard.classList.remove('below', 'above');
+            idleCard.classList.add('active');
+
+            activeCard.classList.remove('active');
+            activeCard.classList.add(isNext ? 'exit-up' : 'exit-down');
+
+            currentIndex = newIndex;
+            updateProgress();
+
+            setTimeout(() => {
+                isAnimating = false;
+            }, 500);
+        }
+
+        // Tap Interaction
+        document.addEventListener('click', (e) => {
+            const activeCard = cardA.classList.contains('active') ? cardA : cardB;
+            activeCard.querySelector('.bangla').classList.toggle('hidden');
+        });
+
+        // Touch/Swipe Interaction
+        document.addEventListener('touchstart', e => startY = e.touches[0].clientY);
+        document.addEventListener('touchend', e => {
+            const diff = startY - e.changedTouches[0].clientY;
+            if (Math.abs(diff) > 60) swipe(diff > 0 ? 'up' : 'down');
+        });
+
+        // Initial Setup
+        setCardData(cardA, 0);
+        updateProgress();
+    </script>
+</body>
+</html>
