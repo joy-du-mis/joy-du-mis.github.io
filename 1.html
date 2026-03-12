@@ -1,306 +1,187 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Reel-style Flashcards — Vocabulary</title>
-  <style>
-    :root{
-      --bg1: #0f172a;
-      --bg2: #0b1b2b;
-      --card-bg: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      --accent: #7c3aed;
-      --glass: rgba(255,255,255,0.04);
-    }
-    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial}
-    body{
-      background: radial-gradient(1200px 600px at 10% 10%, rgba(124,58,237,0.12), transparent),
-                  radial-gradient(900px 400px at 90% 90%, rgba(14,165,233,0.06), transparent),
-                  linear-gradient(180deg,var(--bg1),var(--bg2));
-      color:#fff; overflow:hidden; display:flex; align-items:center; justify-content:center;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interactive Reel Stacks</title>
+    <style>
+        :root {
+            --word-bg: #121212;
+            --meaning-bg: #1a237e;
+            --accent: #00f2ea;
+        }
 
-    /* App wrapper */
-    .app{
-      width:100%; max-width:520px; height:100dvh; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;
-    }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-    /* Card stage */
-    .stage{
-      width:100%; height:90vh; position:relative; touch-action:none; /* let pointer events handle gestures */
-      display:flex; align-items:center; justify-content:center; pointer-events:none;
-    }
+        body {
+            background: #000;
+            color: white;
+            font-family: -apple-system, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
 
-    .card{
-      width:86%; max-width:420px; height:min(72dvh,600px); min-height:320px; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-      border-radius:20px; background:var(--card-bg); backdrop-filter: blur(8px) saturate(1.1);
-      box-shadow: 0 20px 40px rgba(2,6,23,0.6), inset 0 1px rgba(255,255,255,0.02);
-      padding:28px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
-      transition: transform 360ms cubic-bezier(.22,.9,.28,1), opacity 240ms ease;
-      pointer-events:auto; user-select:none;
-    }
+        #viewport {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
 
-    .card h1{
-      margin:0; font-size:5.2rem; line-height:1; letter-spacing: -0.02em; text-align:center;
-      text-shadow: 0 6px 18px rgba(12,15,30,0.6);
-    }
-    .card .meta{font-size:0.95rem; opacity:0.8}
+        .card-stack {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            will-change: transform;
+            display: flex;
+            transition: transform 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
 
-    /* meaning overlay (revealed on tap) */
-    .meaning{
-      width:100%; border-radius:14px; padding:16px; box-sizing:border-box; text-align:center;
-      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-      transform: translateY(28px); opacity:0; transition: transform 260ms cubic-bezier(.2,.9,.25,1), opacity 240ms ease;
-      font-size:1.2rem; line-height:1.5;
-    }
-    .card.revealed .meaning{ transform: translateY(0); opacity:1 }
+        .page {
+            min-width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+            user-select: none;
+        }
 
-    /* small hint */
-    .hint{ position:absolute; left:50%; transform:translateX(-50%); bottom:26px; font-size:0.9rem; opacity:0.9 }
+        .word-page { background: var(--word-bg); }
+        .meaning-page { background: var(--meaning-bg); }
 
-    /* animation helper classes */
-    .card.next{ transform: translate(-50%,150%); opacity:0 }
-    .card.prev{ transform: translate(-50%,-150%); opacity:0 }
+        .label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; margin-bottom: 15px; }
+        .text { font-size: 3.5rem; font-weight: 900; }
 
-    .animating .card{ transition: transform 300ms cubic-bezier(.22,.9,.28,1), opacity 200ms ease }
-
-    /* subtle controls for desktop */
-    .controls{ position:absolute; right:12px; top:12px; display:flex; gap:8px }
-    .btn{ background:var(--glass); padding:8px 10px; border-radius:10px; font-size:0.9rem; cursor:pointer; border:1px solid rgba(255,255,255,0.03) }
-    .btn:active{ transform:translateY(1px) }
-
-    /* pagination dots */
-    .dots{ position:absolute; left:12px; top:12px; display:flex; gap:6px }
-    .dot{ width:8px; height:8px; border-radius:999px; background:rgba(255,255,255,0.12) }
-    .dot.active{ background:var(--accent); box-shadow:0 4px 12px rgba(124,58,237,0.22) }
-
-    /* responsive tweaks */
-    @media (max-width:520px){
-      .card h1{ font-size:4.2rem }
-      .meaning{ font-size:1rem }
-    }
-
-  </style>
+        .hint {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            opacity: 0.3;
+            z-index: 1000;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
-  <div class="app" id="app">
-    <div class="stage" id="stage" aria-live="polite" aria-label="Vocabulary reel">
-      <!-- Cards will be injected here -->
-    </div>
 
-    <div class="controls">
-      <button class="btn" id="prevBtn">◀ Prev</button>
-      <button class="btn" id="nextBtn">Next ▶</button>
-    </div>
+    <div id="viewport"></div>
+    <div class="hint">Tap to Flip • Drag vertically to browse</div>
 
-    <div class="dots" id="dots"></div>
+    <script>
+        const vocab = [
+            { en: "Infallible", bn: "নির্ভুল" },
+            { en: "Euphoria", bn: "উচ্ছ্বাস" },
+            { en: "Serendipity", bn: "আকস্মিক সৌভাগ্য" },
+            { en: "Nuance", bn: "সামান্য পার্থক্য" },
+            { en: "Vibrant", bn: "প্রাণবন্ত" }
+        ];
 
-    <div class="hint">Tap card to reveal meaning • Swipe up/down to navigate</div>
-  </div>
+        const viewport = document.getElementById('viewport');
+        const cards = [];
+        let currentIdx = 0;
+        let startY = 0;
+        let isDragging = false;
+        let deltaY = 0;
 
-  <script>
-    // Sample vocabulary — replace or extend this array with your own words and Bangla meanings
-    const vocab = [
-      {word:'Abstain', meaning:'নিষেধ করা; বিরত থাকা'},
-      {word:'Benevolent', meaning:'পরোপকারী; সদয়'},
-      {word:'Candid', meaning:'খোলামেলা; নিরপেক্ষ'},
-      {word:'Daunt', meaning:'ভয় দেখানো; হাল ছেড়ে দেওয়াতে প্ররোচিত করা'},
-      {word:'Eloquent', meaning:'প্রভাষ্য; সাবলীল ভাষায় কথা বলা'},
-      {word:'Frugal', meaning:'সংযমী; মিতব্যয়ী'},
-      {word:'Gist', meaning:'মূল বক্তব্য; সারমর্ম'},
-      {word:'Heed', meaning:'মনোযোগ দেওয়া; লক্ষ্য করা'},
-      {word:'Impeccable', meaning:'ত্রুটিহীন; দুর্দান্ত'},
-      {word:'Juxtapose', meaning:'পার্শ্ববর্তীভাবে স্থাপন করা; তুলনা করা'}
-    ];
+        // 1. Initialize Stack
+        vocab.forEach((item, i) => {
+            const el = document.createElement('div');
+            el.className = 'card-stack';
+            el.style.zIndex = vocab.length - i; // Higher index for earlier cards
+            el.innerHTML = `
+                <div class="page word-page">
+                    <div class="label">English</div>
+                    <div class="text">${item.en}</div>
+                </div>
+                <div class="page meaning-page">
+                    <div class="label">Bangla</div>
+                    <div class="text" style="color:var(--accent)">${item.bn}</div>
+                </div>
+            `;
 
-    // App state
-    let index = 0;
-    const stage = document.getElementById('stage');
-    const dots = document.getElementById('dots');
-    const app = document.getElementById('app');
+            // Tap to flip
+            el.addEventListener('click', () => {
+                const isFlipped = el.dataset.flipped === 'true';
+                el.style.transform = isFlipped ? 'translateX(0%)' : 'translateX(-100%)';
+                el.dataset.flipped = !isFlipped;
+            });
 
-    // Keep references to three DOM nodes for prev/current/next
-    let nodes = { prev: null, curr: null, next: null };
-    let isAnimating = false;
+            viewport.appendChild(el);
+            cards.push(el);
+        });
 
-    // Build initial dots
-    function buildDots(){
-      dots.innerHTML = '';
-      vocab.forEach((v,i)=>{
-        const d = document.createElement('div'); d.className='dot' + (i===index? ' active':''); d.dataset.i=i; dots.appendChild(d);
-      });
-    }
-
-    // Create a card DOM node
-    function makeCard({word, meaning}, role){
-      const el = document.createElement('article');
-      el.className = 'card ' + (role||'');
-      el.setAttribute('role','button');
-      el.setAttribute('aria-label', word + ' — tap to reveal meaning');
-
-      const wordEl = document.createElement('h1'); wordEl.textContent = word;
-      const meta = document.createElement('div'); meta.className='meta'; meta.textContent = `${index+1} / ${vocab.length}`;
-      const meaningEl = document.createElement('div'); meaningEl.className='meaning'; meaningEl.textContent = meaning;
-
-      el.appendChild(wordEl); el.appendChild(meta); el.appendChild(meaningEl);
-
-      return el;
-    }
-
-    function renderInitial(){
-      stage.innerHTML='';
-      nodes.curr = makeCard(vocab[index]);
-      nodes.curr.classList.remove('prev','next');
-      stage.appendChild(nodes.curr);
-
-      if(index>0){ nodes.prev = makeCard(vocab[index-1],'prev'); stage.appendChild(nodes.prev); }
-      else nodes.prev = null;
-
-      if(index < vocab.length-1){ nodes.next = makeCard(vocab[index+1],'next'); stage.appendChild(nodes.next); }
-      else nodes.next = null;
-
-      attachPointerHandlers(nodes.curr);
-      updateDots();
-    }
-
-    function updateDots(){
-      dots.querySelectorAll('.dot').forEach(d=> d.classList.toggle('active', +d.dataset.i === index));
-      // update meta on current card
-      const meta = nodes.curr && nodes.curr.querySelector('.meta'); if(meta) meta.textContent = `${index+1} / ${vocab.length}`;
-    }
-
-    // Move to next card
-    function toNext(){ if(isAnimating || index >= vocab.length-1) return; isAnimating=true; document.body.classList.add('animating');
-      const old = nodes.curr; const off = nodes.next;
-      // Create new next card (after the one that will become current)
-      const newNextIdx = index+2;
-      const newNext = newNextIdx < vocab.length ? makeCard(vocab[newNextIdx],'next') : null;
-      if(newNext) stage.appendChild(newNext);
-
-      // animate
-      old.style.transform = 'translate(-50%,-150%)'; old.style.opacity = 0;
-      if(off) { off.style.transform = 'translate(-50%,-50%)'; off.style.opacity = 1; }
-
-      setTimeout(()=>{
-        // cleanup and reassign
-        index++;
-        document.body.classList.remove('animating');
-        stage.innerHTML='';
-        // rebuild prev/curr/next
-        nodes.prev = index>0 ? makeCard(vocab[index-1],'prev') : null;
-        nodes.curr = makeCard(vocab[index]);
-        nodes.next = index < vocab.length-1 ? makeCard(vocab[index+1],'next') : null;
-
-        if(nodes.prev) stage.appendChild(nodes.prev);
-        stage.appendChild(nodes.curr);
-        if(nodes.next) stage.appendChild(nodes.next);
-
-        attachPointerHandlers(nodes.curr);
-        isAnimating=false; updateDots();
-      }, 320);
-    }
-
-    // Move to prev card
-    function toPrev(){ if(isAnimating || index <= 0) return; isAnimating=true; document.body.classList.add('animating');
-      const old = nodes.curr; const off = nodes.prev;
-      // create new prev card (the one before off)
-      const newPrevIdx = index-2;
-      const newPrev = newPrevIdx >= 0 ? makeCard(vocab[newPrevIdx],'prev') : null;
-      if(newPrev) stage.appendChild(newPrev);
-
-      old.style.transform = 'translate(-50%,150%)'; old.style.opacity = 0;
-      if(off){ off.style.transform = 'translate(-50%,-50%)'; off.style.opacity = 1; }
-
-      setTimeout(()=>{
-        index--;
-        document.body.classList.remove('animating');
-        stage.innerHTML='';
-
-        nodes.prev = index>0 ? makeCard(vocab[index-1],'prev') : null;
-        nodes.curr = makeCard(vocab[index]);
-        nodes.next = index < vocab.length-1 ? makeCard(vocab[index+1],'next') : null;
-
-        if(nodes.prev) stage.appendChild(nodes.prev);
-        stage.appendChild(nodes.curr);
-        if(nodes.next) stage.appendChild(nodes.next);
-
-        attachPointerHandlers(nodes.curr);
-        isAnimating=false; updateDots();
-      }, 320);
-    }
-
-    // Handle pointer gestures on the current card
-    function attachPointerHandlers(card){
-      let startY = 0; let currentY = 0; let dragging = false; let startTime = 0; let moved = false;
-
-      function setTransforms(dy){
-        // Move the current card with the finger, and peek the next/prev accordingly
-        card.style.transition = 'none';
-        card.style.transform = `translate(-50%, calc(-50% + ${dy}px))`;
-        card.style.opacity = 1 - Math.min(Math.abs(dy) / 600, 0.35);
-
-        if(dy < 0 && nodes.next){ // dragging up -> show next card coming up from bottom
-          nodes.next.style.transition = 'none';
-          nodes.next.style.transform = `translate(-50%, calc(150% + ${dy}px))`;
-          nodes.next.style.opacity = Math.min(Math.abs(dy) / 200, 1);
-        }
-        if(dy > 0 && nodes.prev){ // dragging down -> show prev coming down
-          nodes.prev.style.transition = 'none';
-          nodes.prev.style.transform = `translate(-50%, calc(-150% + ${dy}px))`;
-          nodes.prev.style.opacity = Math.min(Math.abs(dy) / 200, 1);
-        }
-      }
-
-      function resetPositions(){
-        [card, nodes.next, nodes.prev].forEach(n=>{ if(!n) return; n.style.transition='transform 260ms cubic-bezier(.22,.9,.28,1), opacity 200ms ease'; n.style.transform = n.classList.contains('next') ? 'translate(-50%,150%)' : (n.classList.contains('prev') ? 'translate(-50%,-150%)' : 'translate(-50%,-50%)'); n.style.opacity = n.classList.contains('next') || n.classList.contains('prev') ? 0 : 1; });
-      }
-
-      function onPointerDown(e){ if(isAnimating) return; dragging=true; moved=false; startY = e.clientY; currentY = startY; startTime = Date.now(); card.classList.remove('revealed');
-        // ensure nodes next/prev have initial transform values
-        if(nodes.next) { nodes.next.style.transition='none'; nodes.next.style.transform='translate(-50%,150%)'; nodes.next.style.opacity=0 }
-        if(nodes.prev) { nodes.prev.style.transition='none'; nodes.prev.style.transform='translate(-50%,-150%)'; nodes.prev.style.opacity=0 }
-      }
-
-      function onPointerMove(e){ if(!dragging) return; const y = e.clientY; const dy = y - startY; currentY = y; if(Math.abs(dy) > 6) moved = true; setTransforms(dy); }
-
-      function onPointerUp(e){ if(!dragging) return; dragging=false; const dy = currentY - startY; const dt = Date.now() - startTime;
-        // Tap detection: short press, minimal movement
-        if(!moved && dt < 250){ // treat as tap
-          card.classList.toggle('revealed'); card.style.transition='transform 200ms ease'; card.style.transform='translate(-50%,-50%)'; return;
+        // 2. Dragging Logic
+        function handleStart(y) {
+            isDragging = true;
+            startY = y;
+            cards.forEach(c => c.style.transition = 'none');
         }
 
-        // Swipe threshold
-        if(dy < -80){ // swipe up -> next
-          toNext();
-        } else if(dy > 80){ // swipe down -> prev
-          toPrev();
-        } else {
-          // not far enough, snap back
-          resetPositions();
+        function handleMove(y) {
+            if (!isDragging) return;
+            deltaY = y - startY;
+
+            // Swipe Up (Moving Current Card Away)
+            if (deltaY < 0 && currentIdx < cards.length - 1) {
+                cards[currentIdx].style.transform = `translateY(${deltaY}px)`;
+            } 
+            // Swipe Down (Pulling Previous Card back in)
+            else if (deltaY > 0 && currentIdx > 0) {
+                const prevCard = cards[currentIdx - 1];
+                prevCard.style.transform = `translateY(${Math.min(-window.innerHeight + deltaY, 0)}px)`;
+            }
         }
-      }
 
-      // Use pointer events for unified touch/mouse support
-      card.addEventListener('pointerdown', onPointerDown);
-      window.addEventListener('pointermove', onPointerMove);
-      window.addEventListener('pointerup', onPointerUp);
+        function handleEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+            const threshold = window.innerHeight * 0.2;
 
-      // Also support keyboard and buttons
-      document.getElementById('nextBtn').onclick = ()=> toNext();
-      document.getElementById('prevBtn').onclick = ()=> toPrev();
-      window.addEventListener('keydown', (ev)=>{
-        if(ev.key === 'ArrowUp') { toNext(); }
-        if(ev.key === 'ArrowDown') { toPrev(); }
-        if(ev.key === ' ' || ev.key === 'Enter') { card.classList.toggle('revealed'); }
-      });
-    }
+            cards.forEach(c => c.style.transition = 'transform 0.5s cubic-bezier(0.2, 1, 0.3, 1)');
 
-    // Init
-    buildDots(); renderInitial();
+            if (deltaY < -threshold && currentIdx < cards.length - 1) {
+                // Confirm Next
+                cards[currentIdx].style.transform = `translateY(-100%)`;
+                currentIdx++;
+            } else if (deltaY > threshold && currentIdx > 0) {
+                // Confirm Previous
+                currentIdx--;
+                cards[currentIdx].style.transform = `translateY(0%)`;
+            } else {
+                // Snap Back
+                cards[currentIdx].style.transform = cards[currentIdx].dataset.flipped === 'true' ? 'translateX(-100%)' : 'translateX(0%)';
+                if (currentIdx > 0) cards[currentIdx - 1].style.transform = `translateY(-100%)`;
+            }
+            deltaY = 0;
+        }
 
-    // Expose a small API so you can programmatically change the dataset from console
-    window.flashcards = { vocab, goNext: toNext, goPrev: toPrev, goTo(i){ if(i<0||i>=vocab.length) return; while(index < i) toNext(); while(index>i) toPrev(); } };
+        // Event Listeners (Mouse + Touch)
+        window.addEventListener('mousedown', e => handleStart(e.clientY));
+        window.addEventListener('mousemove', e => handleMove(e.clientY));
+        window.addEventListener('mouseup', handleEnd);
 
-  </script>
+        window.addEventListener('touchstart', e => handleStart(e.touches[0].clientY));
+        window.addEventListener('touchmove', e => handleMove(e.touches[0].clientY));
+        window.addEventListener('touchend', handleEnd);
+
+        // Wheel Support
+        window.addEventListener('wheel', e => {
+            if (isDragging) return;
+            if (e.deltaY > 50 && currentIdx < cards.length - 1) {
+                cards[currentIdx].style.transform = `translateY(-100%)`;
+                currentIdx++;
+            } else if (e.deltaY < -50 && currentIdx > 0) {
+                currentIdx--;
+                cards[currentIdx].style.transform = `translateY(0%)`;
+            }
+        });
+
+    </script>
 </body>
 </html>
