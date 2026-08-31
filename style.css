@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+*, *::after, *::before{
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+}
+
+body{
+    background-color: #333;
+}
+
+section{
+    max-width: 1200px;
+    background-color: ;
+    margin: auto;
+    color: #ccc;
+    position: relative;
+}
+header{
+    height: 80px;
+    display: flex;
+    justify-content: space-between;
+    background-color: #222;
+    padding: 0px 10px;
+}
+header .logo{
+    
+}
+header .computer .nav{
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+header li{
+    list-style: none;
+    margin: 10px;
+}
+header .mobile{
+    display: none;
+}
+
+.container{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+.container .part{
+    grid-row: 1;
+    width: 100%;
+    padding: 15px 15px;
+
+}
+.showcase-container{
+    position: absolute;
+    width: 100%;
+    display: flex;
+    background-color: red;
+}
+.showcase{
+    height: 95vh;
+    width: auto;
+    margin: auto;
+}
+.showcase-overlay{
+    height: 95vh;
+    width: 100%;
+    position: absolute;
+    background-color: blue;
+}
+.part .content{
+    padding-top: 100px;
+    padding-left: 15px;
+}
+.container .part .image{
+    position: relative;
+    height: 500px ;
+    width: 100% ;
+    background-color: rebeccapurple;
+    margin-right: 0px;
+}
+h2{
+    font-size: 50px;
+    font-weight: 900;
+}
+h3{
+    font-size: 35px;
+}
+p{
+    font-size: 12px;
+}
+.dignity{
+    color: skyblue;
+    font-size: 20px;
+    margin: 10px 0px;
+
+}
+.my-button{
+    background-color: #222;
+    border: none;
+    width: 150px;
+    font-size: 20px;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 15px;
+    margin: 10px 0px;
+}
+
+@media only screen and (max-width: 768px) {
+    
+    
+    }

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    Name <input id="name" type="text"> <br> <br> <br>
+    Gender <input id="gender" type="text"> <br> <br> <br>
+    Section<input id="sec" type="text"> <br> <br> <br>
+    Roll <input id="roll" type="text"> <br> <br> <br>
+
+    <button id="btn-insert">insert</button>
+    <button id="btn-select">select</button>
+    <button id="btn-update">update</button>
+    <button id="btn-delete">delete</button>
+    <br>
+
+<section>
+    <select name="" id="dayName">
+       <option value="">Select a Day</option>
+       <option value="Satureday">Satureday</option>
+       <option value="Sunday">Sunday</option>
+       <option value="Monday">Monday</option>
+       <option value="Tuesday">Tuesday</option>
+       <option value="Wednesday">Wednesday</option>
+       <option value="Thursday">Thursday</option>
+       <option value="Friday">Friday</option>
+   </select>
+   <button id="btn-add-day">Add Day</button>
+
+</section>
+
+<br>
+
+<section>
+    <div id="items"></div>
+</section>
+   
+
+
+
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+      
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+
+apiKey: "AIzaSyAjhpYzK7MP_9iDbEr3eGOxPBCBb8ekzRg",
+
+authDomain: "database-ca369.firebaseapp.com",
+
+projectId: "database-ca369",
+
+storageBucket: "database-ca369.appspot.com",
+
+messagingSenderId: "285117668717",
+
+appId: "1:285117668717:web:2b0b595c371bdb5bdd4e64"
+
+};
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        // import { getDatabase, ref, set, child, update, remove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+        import { getDatabase, ref, set, child, get, onValue } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+        const db = getDatabase();
+
+        // variables for input boxes
+
+        function variAbles(){
+           
+
+        }
+
+        var BtnInsert = document.getElementById('btn-insert');
+        var Bselect = document.getElementById('btn-select');
+        var Bdelete = document.getElementById('btn-delete');
+        var Bupdate = document.getElementById('btn-update');
+        var Bday = document.getElementById('btn-add-day');
+        
+
+        BtnInsert.onclick = function(){
+        var nameV = document.getElementById('name').value;
+        var genderV = document.getElementById('gender').value;
+        var secV = document.getElementById('sec').value;
+        var rollV = document.getElementById('roll').value;
+                        
+                const db = getDatabase();
+                set(ref(db, rollV +'/' + rollV), {
+                    username: nameV,
+                    roll: rollV,
+                    profile_picture : genderV
+            });
+        }
+
+        Bday.onclick = function(){
+            var dayValue = document.getElementById('dayName').value;
+            console.log(dayValue)
+        // var nameV = document.getElementById('name').value;
+        // var genderV = document.getElementById('gender').value;
+        // var secV = document.getElementById('sec').value;
+        // var rollV = document.getElementById('roll').value;
+                        
+                const db = getDatabase();
+                set(ref(db, dayValue +'/'), {
+                    DayName: dayValue
+            });
+        }
+
+//         function writeUserData() {
+//   const db = getDatabase();
+//   set(ref(db, 'users/' + rollV), {
+//     username: nameV,
+//     roll: rollV,
+//     profile_picture : genderV
+//   });
+  
+// }
+
+
+        Bupdate.onclick = function(){
+           
+
+            const dbRef = ref(getDatabase());
+            get(child(dbRef, `/`)).then((snapshot) => {
+            if (snapshot.exists()) {
+                console.log(snapshot.val());
+            } else {
+                console.log("No data available");
+            }
+            }).catch((error) => {
+            console.error(error);
+            });
+        }
+
+
+
+//         function temPlete(pet){
+//   return `<div  class="item">
+//   <div class="menu">Joy<h1>${pet.name}</h1></div>
+//   <div class="content">
+//   </div></div>
+          
+//           `
+// }
+
+
+        Bdelete.onclick = function(){
+
+            const db = getDatabase();
+            const starCountRef = ref(db, '/');
+            onValue(starCountRef, (snapshot) => {
+            const data = snapshot.val();
+            console.log(data);
+            });
+        }
+    //   const obj = JSON.parse('{ "Friday" : {   "DayName" : "Friday" }, "Monday" : {   "DayName" : "Monday"  },  "Satureday" : {    "DayName" : "Satureday"  }, "Tuesday" : {    "DayName" : "Tuesday"  }}');
+
+
+
+      </script>
+    
+</body>
+</html>

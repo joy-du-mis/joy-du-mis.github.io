@@ -1,0 +1,638 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&display=swap');
+
+
+/* Universal Stayle     */
+    
+*, *::after, *::before{
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+    overflow: hidden;
+} 
+:root{
+    --bg: #d7c501;
+    --txt: #ccc;
+    --bgg: #000333;
+
+}     
+a{
+    text-decoration: none;
+    color: white;
+} 
+section{
+    background-color: #d7c501;
+}
+.responsive-tow{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+.res-three{
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.items{
+    flex-grow: 1;
+    flex-basis: 300px;
+}
+
+
+.res-two{
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+   
+}
+.res-col{
+    background-color: ;
+    flex-grow: 1;
+    padding: 5px;
+    text-align: center;
+    flex-basis: 50%;
+    
+}
+.container{
+    max-width: 1200px;
+    margin: auto;
+    padding-top: 10px;
+}
+
+section .title{
+    position: relative;
+     text-align: center;
+     font-size: 35px;
+     font-weight: 500;
+     margin-bottom: 60px;
+     padding-bottom: 20px;
+     color: var(--txt);
+}
+section .title::before{
+    content: '';
+    position: absolute;
+    width: 150px;
+    height: 5px;
+    bottom: 0px;
+    left: 50%;
+    border-radius: 20px;
+    transform: translateX(-50%);
+    background: var(--txt);
+}
+
+section .title::after{
+    position: absolute;
+    bottom: -12px;
+    left: 50%;
+    font-size: 17px;
+    color: rgb(92, 153, 12);
+    padding: 5px;
+    transform: translateX(-50%);
+    background: white;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* header menu including logo, nav, list          */
+        
+header{
+    position: relative;
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--bgg);
+    border-radius: 20px;
+    box-shadow: 0px 0px 20px 0px black;
+    z-index: 15;
+}
+
+header .computer .nav{
+   margin-top: 15px;
+}
+header li{
+    list-style: none;
+    display: inline;
+    margin-right: 20px;
+    
+    
+}
+header li a{
+    color: var(--txt);
+    font-size: 15px;
+    transition: 0.3s;
+
+}
+header li a:hover{
+    transform: scale(1.2);
+    color: var(--bg);
+    cursor: pointer;
+}
+header .close{
+    display: none;
+}
+header .mobile{
+    color: white;
+    font-size: 25px;
+    font-weight: 800;
+    cursor: pointer;
+    display: none;
+    margin-top: 10px;
+    margin-right: 15px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/* showcase elements design here  */
+
+#showcase h4{
+    color: var(--txt);
+
+}
+#showcase h3{
+    color: var(--txt);
+    font-size: 20px;
+
+}
+#showcase p{
+    color: var(--bg);
+
+}
+
+.main{
+    position: relative;
+}
+.image{
+    height: 90vh;
+    width: 100%;
+    background-color: var(--bg);
+    display: flex;
+}
+.showcase{
+    height: 90vh;
+    margin: auto;
+    margin-bottom: 0;
+}
+.image-overlay{
+    position: absolute;
+    height: 90vh;
+    width: 100%;
+    background-image: linear-gradient(to bottom, rgba(255, 0, 0, 0) 10%, var(--bgg) 100%);
+    opacity: 1;
+    top: 0;
+}
+.bottom{    
+    display: flex;
+    background-color: transparent;
+    height: 89vh;
+}
+.contents{
+    width: 100%;
+    text-align: center;
+    align-self: flex-end;
+    margin-bottom: 20px;
+}
+
+
+
+
+
+
+
+
+
+
+/* about me elements design here  */
+
+#about-me{
+    background-color: var(--bg);
+    padding: 100px 0px;
+}
+
+#about-me .title::after{
+    content: "who I am?";
+    background: var(--bg);
+    color: var(--bgg);
+}
+#about-me .title{
+    color: var(--bgg);
+}
+
+
+
+
+
+
+
+
+
+/* portfolio elements design here  */
+
+#portfolio{
+    background-color: var(--bgg);
+    padding: 100px 0px;
+}
+#portfolio .title::after{
+    content: "what i did?";
+    background: var(--bgg);
+}
+#portfolio .responsive-col{
+    display: flex;
+    align-items: center;
+    margin: 10px;
+}
+.port-img{
+    height: 400px;
+    margin: auto;
+    transition: 0.3s;
+}
+.port-img:hover{
+    transform: scale(1.1);
+}
+.details{
+    text-align: left;
+    margin: 25px 10px;
+}
+#portfolio h4{
+    color: var(--txt);
+    font-size: 25px;
+    margin: 20px 0;
+}
+#portfolio p{
+    color: var(--txt);
+    font-size: 15px;
+    width: 100%;
+}
+#portfolio strong{
+    color: var(--bg);
+}
+.default-btn{
+    width: 150px;
+    height: 40px;
+    font-size: 16px;
+    background-color: var(--bg);
+    border-radius: 20px;
+    border: 2px solid var(--bgg);
+    margin: 20px 5px;
+    cursor: pointer;
+}
+.default-btn:hover{
+    background-color: var(--bgg);
+    color: var(--bg);
+    border: 2px solid var(--txt);
+    transition: 0.3s;
+    transform: scale(1.05);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Portfolio Card Styling Here  */
+
+.portfolio-card{
+    height: 280px;
+    width: 500px;
+    background-color: var(--bg);
+    border-radius: 20px;
+    border: 2px solid var(--bg);
+    margin: auto;
+    overflow: hidden;
+    position: relative;
+    transition: 0.3s;
+}
+.portfolio-card:hover{
+    transform: scale(1.1);
+    
+}
+
+.portfolio-img{
+    height: 100%;
+    width: 100%;
+}
+.banner{
+    position: absolute;
+    bottom: 0;
+    background-color: rgba(68, 40, 40, 0.815);
+    width: 100%;
+    display: flex;
+    padding: 10px 10px;
+    margin: auto;
+    align-items: center;
+    justify-content: center;
+}
+.banner .project-name{
+    width: 70%;
+}
+.banner h4{
+    color: var(--txt);
+    font-size: 20px;
+    margin-left: 20px;
+}
+.banner .action-btn{
+    width: 30%;
+}
+.banner button{
+    height: 35px;
+    width: 130px;
+    background-color: var(--bg);
+    border-radius: 20px;
+    color: var(--bgg);
+    font-size: 15px;
+    font-weight: 600;
+    border: 2px solid var(--bgg);
+    transition: 0.3s;
+}
+.banner button:hover{
+    background-color: var(--bgg);
+    color: var(--bg);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Services elements design here  */
+
+#speciality{
+    background-color: var(--bg);
+    padding: 100px 0px;
+}
+
+#speciality .title::after{
+    content: "why Me?";
+    background: var(--bg);
+    color: var(--bgg);
+}
+#speciality .title{
+    color: var(--bgg);
+}
+
+#speciality .items{
+    background-color: var(--bgg);
+    padding: 30px 20px;
+    margin: 20px;
+    border-radius: 10px;
+    text-align: center;
+    transition: 0.3s;
+}
+.items span{
+    color: var(--txt);
+    font-size: 30px;
+}
+.items h4{
+    font-size: 20px;
+    color: var(--bg);
+    line-height: 40px;
+}
+.items p{
+    font-size: 10px;
+    color: var(--txt);
+}
+.items:hover{
+    transform: scale(1.1);
+    cursor: pointer;
+}
+.items:hover span{
+    color: var(--bg);
+}
+.items:hover h4{
+    color: var(--txt);
+}
+
+/* Services elements design here  */
+
+#contact{
+    background-color: var(--bgg);
+    padding: 100px 0px;
+}
+
+
+#contact .title::after{
+    content: "Get in Touch";
+    background: var(--bgg);
+}
+
+
+#contact .title::after{
+    content: "who I am?";
+    background: var(--bgg);
+    color: var(--bg);
+}
+#contact .title{
+    color: var(--txt);
+}
+
+
+#contact h4{
+    color: var(--txt);
+    font-size: 20px;
+}
+.dotted{
+    border: dotted 6px rgb(92, 153, 12);
+    border-bottom: none;
+    margin: 20px auto;
+    width: 25px;
+    margin-bottom: 50px;
+}
+#contact .responsive-col{
+    display: flex;
+    align-items: center;
+    margin: auto;
+    justify-content: center;
+    text-align: center;
+}
+
+.contact-container h4{
+    color: var(--txt);
+}
+.contact-container form{
+    width: 80%;
+    margin: auto;
+}
+
+.contact-container .input-cnt{
+    display: flex;
+    padding: 0;
+    margin: 10px; 
+}
+
+.contact-container .input-cnt > span{
+    min-width: 40px;
+    padding: 10px;
+    text-align: center;
+    color: white;
+    background-color: rgb(92, 153, 12);
+    border-top-left-radius: 25px;
+    border-bottom-left-radius: 10px;
+    font-size: 20px;
+}
+.contact-container .input-cnt > .compose{
+    border-top-left-radius: 25px;
+    border-bottom-left-radius: 10px;
+    padding-top: 45px;
+}
+
+.contact-container .input-cnt > input{
+    outline: none;
+    border: none;
+    padding: 10px;
+    background-color: rgba(255, 0, 0, 0);
+    color: white;
+    border: 2px solid rgb(92, 153, 12);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 25px;
+    width: 100%;
+}
+
+.contact-container .input-cnt > textarea{
+    outline: none;
+    border: none;
+    padding: 10px;
+    background-color: rgba(255, 0, 0, 0);
+    border: 2px solid rgb(92, 153, 12);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 25px;
+    color: white;
+    width: 100%;
+    resize: none;
+    height: 100px;
+}
+
+.contact-container .input-cnt:hover > span{
+    background-color:white;
+    color: rgb(92, 153, 12);
+    transition: all 1s;
+}
+.contact-container .input-cnt:hover > input{
+    border: 2px solid  white;
+    transition: all 1s;
+}
+.contact-container .input-cnt:hover > textarea{
+    border: 2px solid  white;
+    transition: all 1s;
+}
+
+.contact-container button{
+    cursor: pointer;
+    background-color: rgba(248, 97, 9, 0);
+    border-radius: 50px;
+    border: 2px solid rgb(92, 153, 12);
+    padding: 5px 20px;
+    color: rgb(92, 153, 12);
+    font-weight: bolder;
+    font-size: 0.8rem;
+    transition: 0.3s;
+    margin-left: 10px;
+}
+
+.contact-container button:hover{
+    cursor: pointer;
+    background-color: rgb(92, 153, 12);
+    border: 2px solid rgb(92, 153, 12);
+    color: white;
+}
+
+
+
+.contact-icons{
+    text-align: center;
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    justify-content: center;
+    grid-gap: 2rem;
+    margin: 0rem;
+    margin-top: 0rem;
+    text-align: center;
+
+}
+.contact-icons span, .span{
+    font-size: 25px;
+    background-color: rgba(0, 0, 0, 0);
+    padding: 1px 2px;
+    border-radius: 50%;
+    margin: 0px;
+    cursor: pointer;
+    color: white;
+    transition: all 0.5s;
+}
+
+.contact-icons span:hover, .span:hover{
+    color: var(--bg);
+}
+
+
+
+
+
+
+
+
+
+
+/* footer part styling */
+footer{
+    background: #111;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    
+}
